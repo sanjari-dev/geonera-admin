@@ -1,6 +1,7 @@
 import type { Config } from 'tailwindcss'
 
 export default {
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
@@ -11,10 +12,10 @@ export default {
       colors: {
         // Dashboard design tokens
         surface: {
-          DEFAULT: '#0F1117',
-          card: '#161B27',
-          hover: '#1E2435',
-          border: '#252D40',
+          DEFAULT: '#F0F9FF', // sky-50
+          card: '#FFFFFF',
+          hover: '#E0F2FE', // sky-100
+          border: '#E2E8F0', // slate-200
         },
       },
       gridTemplateAreas: {

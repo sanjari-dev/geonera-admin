@@ -112,4 +112,37 @@ export const api = {
     actions: () => get<ActionDef[]>('/control/actions'),
     trigger: (key: string) => post<ControlResult>(`/control/${key}`),
   },
+
+  // ─── Cron Jobs ─────────────────────────────────────────────────────────────
+  crons: {
+    list: () => get<import('@/types').Cron[]>('/crons'),
+    get: (id: string) => get<import('@/types').Cron>(`/crons/${id}`),
+    create: (body: {
+      name: string
+      description?: string
+      cronExpr: string
+      workerKey: string
+      triggerMethod?: 'RABBITMQ' | 'HTTP'
+      queueName?: string
+      httpPath?: string
+      status?: 'ACTIVE' | 'PAUSED' | 'INACTIVE'
+    }) => post<import('@/types').Cron>('/crons', body),
+    update: (id: string, body: {
+      description?: string
+      cronExpr?: string
+      workerKey?: string
+      triggerMethod?: 'RABBITMQ' | 'HTTP'
+      queueName?: string | null
+      httpPath?: string | null
+      status?: 'ACTIVE' | 'PAUSED' | 'INACTIVE'
+    }) => patch<import('@/types').Cron>(`/crons/${id}`, body),
+    toggleStatus: (id: string) => patch<import('@/types').Cron>(`/crons/${id}/status`),
+    trigger: (id: string) => post<import('@/types').CronTriggerResult>(`/crons/${id}/trigger`),
+    delete: async (id: string) => {
+      const res = await fetch(`/api/crons/${id}`, { method: 'DELETE' })
+      const body = await res.json() as { success: boolean; data: unknown; error: string | null }
+      if (!res.ok || !body.success) throw new Error(body.error ?? `DELETE /crons/${id} → ${res.status}`)
+      return body.data
+    },
+  },
 }

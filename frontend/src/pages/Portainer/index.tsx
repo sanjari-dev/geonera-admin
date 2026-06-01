@@ -7,7 +7,7 @@ export default function PortainerPage() {
   return (
     <div className="flex h-full flex-col overflow-hidden p-5">
       <Card
-        className="flex-1 min-h-0 flex flex-col bg-[#0B0F19] border-slate-800/80 shadow-2xl relative overflow-hidden"
+        className="flex-1 min-h-0 flex flex-col bg-[#0B0F19] border-slate-200 dark:border-sky-900/30/80 shadow-2xl relative overflow-hidden"
         bodyClassName="flex-1 min-h-0 flex flex-col"
         noPadding
       >
@@ -20,7 +20,7 @@ export default function PortainerPage() {
                 <span className="text-xs font-semibold uppercase tracking-widest text-indigo-400 drop-shadow-[0_0_4px_rgba(129,140,248,0.4)] animate-pulse">
                   Connecting to Portainer Engine
                 </span>
-                <span className="text-[10px] text-slate-500 font-mono">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
                   UPLINK: https://192.168.1.8:9443/
                 </span>
               </div>

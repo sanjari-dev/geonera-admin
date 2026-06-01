@@ -6,13 +6,13 @@ interface SkeletonProps {
 
 export function Skeleton({ className }: SkeletonProps) {
   return (
-    <div className={clsx('animate-pulse rounded-md bg-slate-800/60', className)} />
+    <div className={clsx('animate-pulse rounded-md bg-sky-50 dark:bg-[#030C18]/60', className)} />
   )
 }
 
 export function KpiCardSkeleton() {
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-slate-800 bg-[#161B27] px-5 py-4">
+    <div className="flex items-center gap-4 rounded-xl border border-slate-200 dark:border-sky-900/30 bg-white dark:bg-[#071628] px-5 py-4">
       <Skeleton className="h-10 w-10 flex-shrink-0 rounded-lg" />
       <div className="flex-1 space-y-2">
         <Skeleton className="h-3 w-20" />
@@ -34,7 +34,7 @@ export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: nu
       </div>
       {/* Rows */}
       {Array.from({ length: rows }).map((_, rowIndex) => (
-        <div key={rowIndex} className="flex items-center space-x-4 border-t border-slate-800/40 pt-4">
+        <div key={rowIndex} className="flex items-center space-x-4 border-t border-slate-200 dark:border-sky-900/30/40 pt-4">
           {Array.from({ length: cols }).map((_, colIndex) => (
             <Skeleton
               key={colIndex}

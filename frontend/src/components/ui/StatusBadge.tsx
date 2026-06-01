@@ -9,8 +9,8 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ status, size = 'sm' }: StatusBadgeProps) {
   const classes = STATUS_CLASSES[status] ?? {
-    badge: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
-    text: 'text-slate-400',
+    badge: 'bg-slate-500/10 text-slate-400 dark:text-slate-500 border-slate-500/20',
+    text: 'text-slate-400 dark:text-slate-500',
     bg: 'bg-slate-500',
   }
 
@@ -38,15 +38,15 @@ export function StatusCell({
 }) {
   if (!status) {
     return (
-      <div className="flex h-8 items-center justify-center rounded bg-slate-900/30 text-[10px] text-slate-600 border border-slate-800/40">
+      <div className="flex h-8 items-center justify-center rounded bg-slate-100 dark:bg-slate-900/30 text-[10px] text-slate-600 border border-slate-200 dark:border-sky-900/30/40">
         —
       </div>
     )
   }
 
   const classes = STATUS_CLASSES[status] ?? {
-    badge: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
-    text: 'text-slate-400',
+    badge: 'bg-slate-500/10 text-slate-400 dark:text-slate-500 border-slate-500/20',
+    text: 'text-slate-400 dark:text-slate-500',
     bg: 'bg-slate-500',
   }
 

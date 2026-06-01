@@ -6,7 +6,6 @@ import StateMonitorPage from '@/pages/StateMonitor'
 import IngestionProgressPage from '@/pages/IngestionProgress'
 import ControlCenterPage from '@/pages/ControlCenter'
 import ObservabilityPage from '@/pages/Observability'
-
 export default function App() {
   return (
     <BrowserRouter>

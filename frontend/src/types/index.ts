@@ -136,3 +136,36 @@ export interface SystemHealth {
   database: 'connected' | 'disconnected'
   timestamp: string
 }
+
+// ─── Cron Job Management ─────────────────────────────────────────────────────
+
+export type CronStatus = 'ACTIVE' | 'PAUSED' | 'INACTIVE'
+export type CronTriggerMethod = 'RABBITMQ' | 'HTTP'
+
+export interface Cron {
+  id: string
+  name: string
+  description: string | null
+  cronExpr: string
+  workerKey: string
+  triggerMethod: CronTriggerMethod
+  queueName: string | null
+  httpPath: string | null
+  status: CronStatus
+  lastTriggeredAt: string | null
+  lastResult: Record<string, unknown> | null
+  createdAt: string
+  updatedAt: string
+  nextRunAt: string | null   // computed by backend via croner
+}
+
+export interface CronTriggerResult {
+  success: boolean
+  durationMs: number
+  triggeredAt: string
+  method: CronTriggerMethod
+  queue?: string
+  httpStatus?: number
+  path?: string
+  error?: string
+}

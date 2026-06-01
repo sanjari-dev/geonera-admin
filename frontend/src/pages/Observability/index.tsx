@@ -22,12 +22,12 @@ export default function ObservabilityPage() {
   return (
     <div className="flex h-full flex-col overflow-hidden p-5">
       <Card
-        className="flex-1 min-h-0 flex flex-col bg-[#0B0F19] border-slate-800/80 shadow-2xl relative overflow-hidden"
+        className="flex-1 min-h-0 flex flex-col bg-[#0B0F19] border-slate-200 dark:border-sky-900/30/80 shadow-2xl relative overflow-hidden"
         bodyClassName="flex-1 min-h-0 flex flex-col"
         noPadding
       >
         {/* Sleek Tab Navigation */}
-        <div className="flex flex-shrink-0 items-center justify-between border-b border-slate-800/80 bg-slate-950/60 px-5 relative z-30">
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-slate-200 dark:border-sky-900/30/80 bg-slate-50 dark:bg-slate-950/60 px-5 relative z-30">
           <div className="flex items-end gap-1.5 pt-3">
             {TABS.map((tab) => {
               const Icon = tab.icon
@@ -39,8 +39,8 @@ export default function ObservabilityPage() {
                   className={clsx(
                     'group relative flex items-center gap-2.5 rounded-t-xl px-5 py-3 text-sm font-medium transition-all duration-300',
                     isActive
-                      ? 'bg-slate-800/50 text-indigo-400'
-                      : 'text-slate-400 hover:bg-slate-800/30 hover:text-slate-200'
+                      ? 'bg-sky-50 dark:bg-[#030C18]/50 text-indigo-400'
+                      : 'text-slate-400 dark:text-slate-500 hover:bg-sky-50 dark:hover:bg-slate-800 dark:bg-[#030C18]/30 hover:text-slate-800 dark:hover:text-slate-200 dark:text-sky-100'
                   )}
                 >
                   {/* Active Glowing Top Border */}
@@ -48,7 +48,7 @@ export default function ObservabilityPage() {
                     <div className="absolute top-0 left-0 right-0 h-0.5 bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.8)] rounded-t-full" />
                   )}
                   
-                  <Icon size={16} className={clsx('transition-transform duration-300', isActive ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300')} />
+                  <Icon size={16} className={clsx('transition-transform duration-300', isActive ? 'text-indigo-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:text-slate-300')} />
                   <span className="tracking-wide">{tab.label}</span>
                 </button>
               )
@@ -60,7 +60,7 @@ export default function ObservabilityPage() {
               href={activeTabObj.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 hover:text-white transition-all duration-300 mt-2 mb-1"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 hover:text-slate-900 dark:text-white transition-all duration-300 mt-2 mb-1"
             >
               <ExternalLink size={12} />
               <span>Buka di Tab Baru</span>
@@ -81,7 +81,7 @@ export default function ObservabilityPage() {
               {!loadedIframes[tab.id] && (
                 <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0A0D14]">
                   <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-500/20 border-t-indigo-500" />
-                  <span className="mt-4 text-xs font-semibold uppercase tracking-widest text-slate-500 animate-pulse">
+                  <span className="mt-4 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 animate-pulse">
                     Establishing Secure Uplink...
                   </span>
                 </div>
