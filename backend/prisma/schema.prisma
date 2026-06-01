@@ -1,0 +1,92 @@
+// Prisma schema — maps to existing Go ent-managed database.
+// CRITICAL: Run `prisma generate` ONLY. NEVER run `prisma migrate`.
+// The database schema is owned by the Go ent project.
+//
+// PostgreSQL layout (from database/init.sql):
+//   schema "master"    → instruments, timeframes
+//   schema "ingestion" → states, sync_tasks + custom enum types
+//
+// Enum columns use String in Prisma to avoid conflicts with ent's native
+// PostgreSQL enum types (ingestion.job_type_enum, ingestion.status_enum,
+// ingestion.sync_status_enum).
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["master", "ingestion"]
+}
+
+// ─── master.instruments ──────────────────────────────────────────────────────
+// All optional ent fields (Nillable) map to nullable Prisma fields.
+model Instrument {
+  id          String     @id @db.Uuid
+  name        String     @unique
+  description String?                          // TEXT nullable
+  assetClass  String?    @map("asset_class")   // VARCHAR nullable
+  isActive    Boolean    @default(true)  @map("is_active")
+  isPause     Boolean    @default(false) @map("is_pause")
+  divider     Int?                             // INT nullable
+  startDate   DateTime?  @map("start_date") @db.Timestamptz // TIMESTAMPTZ nullable
+  states      State[]
+  syncTasks   SyncTask[]
+
+  @@map("instruments")
+  @@schema("master")
+}
+
+// ─── master.timeframes ───────────────────────────────────────────────────────
+model Timeframe {
+  id       String  @id @db.Uuid
+  name     String  @unique
+  minutes  Int
+  isActive Boolean @default(true) @map("is_active")
+
+  @@map("timeframes")
+  @@schema("master")
+}
+
+// ─── ingestion.states ────────────────────────────────────────────────────────
+// jobType       → ingestion.job_type_enum  : "TICK" | "CANDLE"
+// status        → ingestion.status_enum    : PENDING…ABANDONED
+// previousStatus→ ingestion.status_enum (nullable)
+model State {
+  id                String     @id @db.Uuid
+  instrumentId      String     @map("instrument_id") @db.Uuid
+  jobType           String     @map("job_type")
+  timestamp         DateTime   @db.Timestamptz
+  status            String
+  previousStatus    String?    @map("previous_status")
+  isHoliday         Boolean    @default(false) @map("is_holiday")
+  resolvedTickCount Int        @default(0) @map("resolved_tick_count")
+  retryCount        Int        @default(0) @map("retry_count")
+  notFoundStreak    Int        @default(0) @map("not_found_streak")
+  isDeleted         Boolean    @default(false) @map("is_deleted")
+  updatedAt         DateTime   @map("updated_at") @db.Timestamptz
+  instrument        Instrument @relation(fields: [instrumentId], references: [id])
+
+  @@unique([instrumentId, timestamp, jobType])
+  @@index([status, isDeleted])
+  @@index([instrumentId])
+  @@map("states")
+  @@schema("ingestion")
+}
+
+// ─── ingestion.sync_tasks ────────────────────────────────────────────────────
+// status → ingestion.sync_status_enum : "PENDING" | "PROCESSED"
+model SyncTask {
+  id           String     @id @db.Uuid
+  instrumentId String     @map("instrument_id") @db.Uuid
+  targetDate   DateTime   @map("target_date") @db.Timestamptz
+  status       String     @default("PENDING")
+  createdAt    DateTime   @map("created_at") @db.Timestamptz
+  instrument   Instrument @relation(fields: [instrumentId], references: [id])
+
+  @@unique([instrumentId, targetDate])
+  @@map("sync_tasks")
+  @@schema("ingestion")
+}

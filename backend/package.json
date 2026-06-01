@@ -1,0 +1,22 @@
+{
+  "name": "geonera-admin-backend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts",
+    "db:generate": "bunx prisma generate",
+    "db:pull": "bunx prisma db pull",
+    "db:studio": "bunx prisma studio"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.4.1",
+    "@prisma/client": "^5.22.0",
+    "hono": "^4.6.14",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "prisma": "^5.22.0"
+  }
+}
