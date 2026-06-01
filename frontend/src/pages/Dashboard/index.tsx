@@ -35,7 +35,7 @@ function KpiCard({
   sub?: string
 }) {
   return (
-    <div className="glow-card flex items-center gap-4 rounded-xl border border-slate-200 dark:border-sky-900/30 shadow-sm/80 bg-[#111520] px-5 py-4 transition-all duration-350 shadow-md">
+    <div className="glow-card flex items-center gap-4 rounded-xl border border-slate-200 dark:border-sky-900/30 bg-[#111520] px-5 py-4 transition-all duration-300 shadow-md">
       <div className={clsx('flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-white/5 shadow-inner', color)}>
         <Icon size={18} strokeWidth={2.2} />
       </div>
@@ -59,7 +59,7 @@ function Heatmap({ data }: { data: HeatmapEntry[] }) {
   return (
     <div className="w-full h-full overflow-auto pr-1">
       {/* Header row */}
-      <div className="sticky top-0 z-10 grid gap-3.5 bg-[#040E1C]/80 backdrop-blur border-b border-slate-200 dark:border-sky-900/30 shadow-sm/60 pb-2.5 mb-2.5" style={{ gridTemplateColumns: '150px 1fr 1fr' }}>
+      <div className="sticky top-0 z-10 grid gap-3.5 bg-[#040E1C]/80 backdrop-blur border-b border-slate-200 dark:border-sky-900/30 pb-2.5 mb-2.5" style={{ gridTemplateColumns: '150px 1fr 1fr' }}>
         <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Instrument Symbol</div>
         <div className="text-center text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">TICK Ingestion</div>
         <div className="text-center text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">CANDLE Ingestion</div>
@@ -153,7 +153,7 @@ export default function DashboardPage() {
         <Card
           title="Pipeline Ingestion Heatmap"
           subtitle="Dominant state per job type · TICK confirmed counts shown"
-          className="flex-1 min-w-0 bg-[#111520] border-slate-200 dark:border-sky-900/30 shadow-sm/80"
+          className="flex-1 min-w-0 bg-[#111520] border-slate-200 dark:border-sky-900/30"
           scrollable
           noPadding
           bodyClassName="p-4"
@@ -165,7 +165,7 @@ export default function DashboardPage() {
 
         {/* System health — takes 1/3 */}
         <div className="flex w-72 flex-shrink-0 flex-col gap-4">
-          <Card title="System Health Status" className="flex-shrink-0 bg-[#111520] border-slate-200 dark:border-sky-900/30 shadow-sm/80">
+          <Card title="System Health Status" className="flex-shrink-0 bg-[#111520] border-slate-200 dark:border-sky-900/30">
             {kpis.isLoading ? (
               <div className="space-y-3">
                 <Skeleton className="h-4 w-full" />
@@ -177,7 +177,7 @@ export default function DashboardPage() {
             )}
           </Card>
 
-          <Card title="Database State Breakdown" className="flex-1 bg-[#111520] border-slate-200 dark:border-sky-900/30 shadow-sm/80" scrollable>
+          <Card title="Database State Breakdown" className="flex-1 bg-[#111520] border-slate-200 dark:border-sky-900/30" scrollable>
             {kpis.isLoading ? (
               <div className="space-y-4">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -212,7 +212,7 @@ function SystemHealth({ totalStates, kpis }: { totalStates: number; kpis: KpiSta
   return (
     <div className="space-y-3">
       {healthItems.map(({ label, value, icon: Icon, color, ok }) => (
-        <div key={label} className="flex items-center justify-between border-b border-slate-200 dark:border-sky-900/30 shadow-sm/35 pb-2 last:border-0 last:pb-0">
+        <div key={label} className="flex items-center justify-between border-b border-slate-200 dark:border-sky-900/30 pb-2 last:border-0 last:pb-0">
           <div className="flex items-center gap-2">
             <Icon size={13} className={clsx('stroke-[2.2px]', ok ? 'text-emerald-400' : 'text-red-400')} />
             <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">{label}</span>
@@ -247,7 +247,7 @@ function StateBreakdown({ kpis }: { kpis: KpiStats }) {
             <span className="font-mono text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:text-slate-300 transition-colors">{label}</span>
             <span className="tabular-nums font-bold text-slate-400 dark:text-slate-500 group-hover:text-slate-800 dark:hover:text-slate-200 dark:text-sky-100 transition-colors">{value.toLocaleString()}</span>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-white dark:bg-[#071628] border border-slate-200 dark:border-sky-900/30 shadow-sm/40 p-[0.5px]">
+          <div className="h-1.5 overflow-hidden rounded-full bg-white dark:bg-[#071628] border border-slate-200 dark:border-sky-900/30 p-[0.5px]">
             <div
               className={clsx('h-full rounded-full transition-all duration-500 ease-out shadow', color)}
               style={{ width: `${Math.min(100, (value / total) * 100)}%` }}

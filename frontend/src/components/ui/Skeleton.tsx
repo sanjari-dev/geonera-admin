@@ -34,7 +34,7 @@ export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: nu
       </div>
       {/* Rows */}
       {Array.from({ length: rows }).map((_, rowIndex) => (
-        <div key={rowIndex} className="flex items-center space-x-4 border-t border-slate-200 dark:border-sky-900/30/40 pt-4">
+        <div key={rowIndex} className="flex items-center space-x-4 border-t border-slate-200 dark:border-sky-900/40 pt-4">
           {Array.from({ length: cols }).map((_, colIndex) => (
             <Skeleton
               key={colIndex}

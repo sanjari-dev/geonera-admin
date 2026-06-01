@@ -45,7 +45,7 @@ function InstrumentCard({ entry }: { entry: ProgressEntry }) {
   const latestCandle = entry.latestCandleDate ? new Date(entry.latestCandleDate) : null
 
   return (
-    <div className="glow-card border border-slate-200 dark:border-sky-900/30 shadow-sm/80 bg-[#111520] p-4.5 rounded-xl transition-all duration-300 shadow-lg">
+    <div className="glow-card border border-slate-200 dark:border-sky-900/30 bg-[#111520] p-[18px] rounded-xl transition-all duration-300 shadow-lg">
       {/* Header */}
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
@@ -86,7 +86,7 @@ function InstrumentCard({ entry }: { entry: ProgressEntry }) {
       <div className="mb-4.5 space-y-3.5">
         <ProgressBar
           value={entry.tickProgress}
-          color="bg-gradient-to-r from-indigo-600 to-indigo-500"
+          color="bg-gradient-to-r from-sky-600 to-sky-500"
           label="TICK (hourly files)"
           confirmed={entry.tickConfirmed}
           total={entry.expectedTickHours}
@@ -101,7 +101,7 @@ function InstrumentCard({ entry }: { entry: ProgressEntry }) {
       </div>
 
       {/* Dates row */}
-      <div className="grid grid-cols-3 gap-2 border-t border-slate-200 dark:border-sky-900/30 shadow-sm/60 pt-3">
+      <div className="grid grid-cols-3 gap-2 border-t border-slate-200 dark:border-sky-900/30 pt-3">
         <div>
           <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tracking-wider uppercase">Start Date</p>
           <p className="font-mono text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">{startDate ? startDate.toLocaleDateString() : '—'}</p>
@@ -125,8 +125,8 @@ function InstrumentCard({ entry }: { entry: ProgressEntry }) {
 
 function SummaryCard({ label, value, icon: Icon, color }: { label: string; value: string; icon: any; color: string }) {
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-slate-200 dark:border-sky-900/30 shadow-sm/80 bg-[#111520] px-5 py-4 shadow-md">
-      <div className={clsx('flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#040E1C]/20 border border-slate-200 dark:border-sky-900/30 shadow-sm/80', color)}>
+    <div className="flex items-center gap-4 rounded-xl border border-slate-200 dark:border-sky-900/30 bg-[#111520] px-5 py-4 shadow-md">
+      <div className={clsx('flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#040E1C]/20 border border-slate-200 dark:border-sky-900/30', color)}>
         <Icon size={18} strokeWidth={2.2} />
       </div>
       <div>
@@ -175,7 +175,7 @@ export default function IngestionProgressPage() {
         {isLoading && (
           <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))' }}>
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="border border-slate-200 dark:border-sky-900/30 shadow-sm bg-[#111520] p-4.5 rounded-xl space-y-4 shadow">
+              <div key={i} className="border border-slate-200 dark:border-sky-900/30 bg-[#111520] p-[18px] rounded-xl space-y-4 shadow">
                 <div className="flex justify-between items-center">
                   <Skeleton className="h-4 w-24" />
                   <Skeleton className="h-4 w-28" />

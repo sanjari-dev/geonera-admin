@@ -11,13 +11,12 @@ export default function AppShell() {
 
   return (
     <div
-      className="h-screen w-screen overflow-hidden"
+      className="geonera-page h-screen w-screen overflow-hidden"
       style={{
         display: 'grid',
         gridTemplateAreas: '"topbar topbar" "sidebar main"',
         gridTemplateRows: '56px 1fr',
         gridTemplateColumns: '240px 1fr',
-        background: '#030C18',
       }}
     >
       <header style={{ gridArea: 'topbar' }}>
@@ -30,7 +29,7 @@ export default function AppShell() {
 
       <aside
         style={{ gridArea: 'sidebar' }}
-        className="overflow-hidden border-r border-slate-200 dark:border-sky-900/30"
+        className="overflow-hidden border-r border-sky-200/60 dark:border-sky-900/30"
       >
         <Sidebar />
       </aside>

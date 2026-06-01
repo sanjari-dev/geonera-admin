@@ -39,16 +39,16 @@ export default function ObservabilityPage() {
                   className={clsx(
                     'group relative flex items-center gap-2.5 rounded-t-xl px-5 py-3 text-sm font-medium transition-all duration-300',
                     isActive
-                      ? 'bg-sky-50 dark:bg-[#030C18]/50 text-indigo-400'
+                      ? 'bg-sky-50 dark:bg-[#030C18]/50 text-sky-700 dark:text-indigo-400'
                       : 'text-slate-400 dark:text-slate-500 hover:bg-sky-50 dark:hover:bg-slate-800 dark:bg-[#030C18]/30 hover:text-slate-800 dark:hover:text-slate-200 dark:text-sky-100'
                   )}
                 >
                   {/* Active Glowing Top Border */}
                   {isActive && (
-                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.8)] rounded-t-full" />
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-sky-500 dark:bg-indigo-500 shadow-[0_0_10px_rgba(14,165,233,0.45)] dark:shadow-[0_0_10px_rgba(99,102,241,0.8)] rounded-t-full" />
                   )}
                   
-                  <Icon size={16} className={clsx('transition-transform duration-300', isActive ? 'text-indigo-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:text-slate-300')} />
+                  <Icon size={16} className={clsx('transition-transform duration-300', isActive ? 'text-sky-700 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:text-slate-300')} />
                   <span className="tracking-wide">{tab.label}</span>
                 </button>
               )
@@ -60,7 +60,7 @@ export default function ObservabilityPage() {
               href={activeTabObj.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 hover:text-slate-900 dark:text-white transition-all duration-300 mt-2 mb-1"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500/10 dark:bg-indigo-500/10 text-sky-700 dark:text-indigo-400 border border-sky-500/25 dark:border-indigo-500/20 hover:bg-sky-500/20 dark:hover:bg-indigo-500/20 hover:text-sky-950 dark:hover:text-white transition-all duration-300 mt-2 mb-1"
             >
               <ExternalLink size={12} />
               <span>Buka di Tab Baru</span>
@@ -80,8 +80,8 @@ export default function ObservabilityPage() {
             >
               {!loadedIframes[tab.id] && (
                 <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0A0D14]">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-500/20 border-t-indigo-500" />
-                  <span className="mt-4 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 animate-pulse">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-500/20 dark:border-indigo-500/20 border-t-sky-600 dark:border-t-indigo-500" />
+                  <span className="mt-4 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 dark:animate-pulse">
                     Establishing Secure Uplink...
                   </span>
                 </div>

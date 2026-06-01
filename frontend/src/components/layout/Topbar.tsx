@@ -6,6 +6,11 @@ import type { WsStatus } from '@/hooks/useWebSocket'
 import { api } from '@/lib/api'
 import { clsx } from 'clsx'
 
+const getStoredTheme = (): 'light' | 'dark' => {
+  if (typeof window === 'undefined') return 'light'
+  return localStorage.getItem('theme') === 'dark' ? 'dark' : 'light'
+}
+
 const CONNECTED_APPS = [
   {
     name: 'Geonera Cockpit',
@@ -42,9 +47,7 @@ export default function Topbar({ wsStatus, onToggleNotifications, hasUnreadNotif
   const [time, setTime] = useState<Date>(new Date())
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('theme') as 'light' | 'dark') || 'light'
-  })
+  const [theme, setTheme] = useState<'light' | 'dark'>(getStoredTheme)
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -104,12 +107,12 @@ export default function Topbar({ wsStatus, onToggleNotifications, hasUnreadNotif
   }
 
   return (
-    <div className="flex h-full w-full items-center justify-between border-b border-slate-200 dark:border-sky-900/30/60 bg-white dark:bg-[#071628]/90 dark:bg-[#04101E]/95/95 backdrop-blur-md px-6 shadow-sm relative z-10">
+    <div className="flex h-full w-full items-center justify-between border-b border-sky-200/55 dark:border-sky-900/35 bg-white/90 dark:bg-[#04101E]/95 backdrop-blur-md px-6 shadow-sm relative z-10">
       {/* Left - App Switcher Dropdown */}
       <div className="relative">
         <button
           onClick={() => setIsOpen((prev) => !prev)}
-          className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-sky-900/30 bg-white dark:bg-[#071628] hover:bg-slate-100 dark:hover:bg-slate-900 dark:bg-slate-900/80 hover:border-slate-300 dark:hover:border-slate-700 dark:border-slate-700/80 shadow-sm transition-all duration-200 relative group text-left cursor-pointer"
+          className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border border-sky-200/65 dark:border-sky-900/35 bg-white/85 dark:bg-slate-900/80 hover:bg-sky-50 dark:hover:bg-slate-900 hover:border-sky-300/70 dark:hover:border-sky-700/60 shadow-sm transition-all duration-200 relative group text-left cursor-pointer"
         >
           <div className="flex items-center gap-2">
             <LayoutGrid size={13} className="text-sky-600 dark:text-sky-400 drop-shadow-[0_0_3px_rgba(56,189,248,0.5)] group-hover:scale-105 transition-transform" />
@@ -126,8 +129,8 @@ export default function Topbar({ wsStatus, onToggleNotifications, hasUnreadNotif
             {/* Click-outside backdrop */}
             <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
             
-            <div className="absolute left-0 mt-2 w-64 rounded-xl border border-slate-300 dark:border-slate-700/50 bg-white dark:bg-[#071628]/95 backdrop-blur-md shadow-2xl p-2 z-[100] animate-in fade-in slide-in-from-top-2 duration-150">
-              <div className="px-3 py-1.5 border-b border-slate-200 dark:border-sky-900/30/80 mb-1.5">
+            <div className="absolute left-0 mt-2 w-64 rounded-xl border border-sky-200/75 dark:border-sky-900/35 bg-white/95 dark:bg-[#071628]/95 backdrop-blur-md shadow-2xl p-2 z-[100] animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="px-3 py-1.5 border-b border-sky-200/60 dark:border-sky-900/35 mb-1.5">
                 <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono">Connected Applications</span>
               </div>
               <div className="space-y-1">
@@ -149,7 +152,7 @@ export default function Topbar({ wsStatus, onToggleNotifications, hasUnreadNotif
                         "w-full flex items-start gap-3 p-2.5 rounded-lg text-left transition-all duration-150 group cursor-pointer",
                         isSelected
                           ? "bg-sky-500/10 border border-sky-500/20 text-sky-700 dark:text-sky-300"
-                          : "border border-transparent hover:bg-slate-100 dark:hover:bg-slate-900 dark:bg-slate-900/60 hover:border-slate-200 dark:hover:border-slate-800 dark:border-sky-900/30 text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 dark:text-sky-100"
+                          : "border border-transparent hover:bg-sky-50 dark:hover:bg-slate-900 dark:bg-slate-900/60 hover:border-sky-200/70 dark:hover:border-sky-900/40 text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 dark:text-sky-100"
                       )}
                     >
                       <div className={clsx(
@@ -174,9 +177,9 @@ export default function Topbar({ wsStatus, onToggleNotifications, hasUnreadNotif
       </div>
 
       {/* Center - Real-time UTC Cockpit Clock */}
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-3 px-4 py-1.5 rounded-lg border border-slate-200 dark:border-sky-900/30/50 bg-white dark:bg-[#071628] shadow-md">
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-3 px-4 py-1.5 rounded-lg border border-sky-200/65 dark:border-sky-900/35 bg-white/85 dark:bg-[#071628] shadow-md">
         <div className="flex items-center gap-2">
-          <Clock size={12} className="text-sky-600 dark:text-sky-400 animate-pulse drop-shadow-[0_0_4px_rgba(56,189,248,0.6)]" />
+          <Clock size={12} className="text-sky-600 dark:text-sky-400 dark:animate-pulse drop-shadow-[0_0_4px_rgba(56,189,248,0.6)]" />
           <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono">SYS_TIME</span>
         </div>
         <div className="h-3 w-px bg-sky-50 dark:bg-[#030C18]" />
@@ -240,7 +243,7 @@ export default function Topbar({ wsStatus, onToggleNotifications, hasUnreadNotif
         {/* Notification Button */}
         <button
           onClick={onToggleNotifications}
-          className="interactive-element flex items-center justify-center h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-sky-900/30 hover:border-sky-400 dark:border-sky-500/40 text-slate-400 dark:text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 dark:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-900 dark:bg-slate-900/90 shadow-inner transition-all duration-150 relative group cursor-pointer"
+          className="interactive-element flex items-center justify-center h-8 w-8 rounded-lg bg-sky-50 dark:bg-slate-900/90 border border-sky-200/65 dark:border-sky-500/35 hover:border-sky-400 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-slate-900 shadow-inner transition-all duration-150 relative group cursor-pointer"
           title="System Logs & Alerts"
         >
           <Bell size={13} className="group-hover:scale-105 transition-transform" />
@@ -252,7 +255,8 @@ export default function Topbar({ wsStatus, onToggleNotifications, hasUnreadNotif
         {/* Theme Toggle Button */}
         <button
           onClick={handleToggleTheme}
-          className="interactive-element flex items-center justify-center h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-sky-900/30 hover:border-sky-400 dark:border-sky-500/40 text-slate-400 dark:text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-900 shadow-inner transition-all duration-150 relative group"
+          className="interactive-element flex items-center justify-center h-8 w-8 rounded-lg bg-sky-50 dark:bg-slate-900/90 border border-sky-200/65 dark:border-sky-500/35 hover:border-sky-400 text-slate-400 dark:text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-sky-100 dark:hover:bg-slate-900 shadow-inner transition-all duration-150 relative group"
+          aria-pressed={theme === 'dark'}
           title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
         >
           {theme === 'dark' ? (
@@ -267,7 +271,7 @@ export default function Topbar({ wsStatus, onToggleNotifications, hasUnreadNotif
         {/* Fullscreen Button */}
         <button
           onClick={toggleFullscreen}
-          className="interactive-element flex items-center justify-center h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-sky-900/30 hover:border-sky-400 dark:border-sky-500/40 text-slate-400 dark:text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 dark:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-900 dark:bg-slate-900/90 shadow-inner transition-all duration-150 relative group"
+          className="interactive-element flex items-center justify-center h-8 w-8 rounded-lg bg-sky-50 dark:bg-slate-900/90 border border-sky-200/65 dark:border-sky-500/35 hover:border-sky-400 text-slate-400 dark:text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-slate-900 shadow-inner transition-all duration-150 relative group"
           title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
         >
           {isFullscreen ? (

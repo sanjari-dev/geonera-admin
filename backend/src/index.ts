@@ -10,20 +10,23 @@ import timeframes from './routes/timeframes'
 import states from './routes/states'
 import progress from './routes/progress'
 import control from './routes/control'
+import crons from './routes/crons'
 import { globalErrorHandler } from './middleware/errorHandler'
 import { sendSuccess } from './lib/response'
+import { runMigrations } from './lib/migrate'
+import { startScheduler, stopScheduler } from './lib/scheduler'
+import { closeRabbitMQ } from './lib/rabbitmq'
 
 const { upgradeWebSocket, websocket } = createBunWebSocket<ServerWebSocket>()
 
 const app = new Hono()
 
-// Apply error handler
 app.onError(globalErrorHandler)
 
 app.use(
   '*',
   cors({
-    origin: ['http://localhost:5173', 'http://localhost:4173'],
+    origin: ['http://localhost:5173', 'http://localhost:4173', 'http://localhost:5174'],
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type'],
   })
@@ -37,6 +40,7 @@ app.route('/api/timeframes', timeframes)
 app.route('/api/states', states)
 app.route('/api/progress', progress)
 app.route('/api/control', control)
+app.route('/api/crons', crons)
 
 app.get('/health', (c) => sendSuccess(c, { status: 'ok', timestamp: new Date().toISOString() }))
 
@@ -60,6 +64,36 @@ app.get(
 )
 
 const port = parseInt(process.env.PORT ?? '3001')
+
+// ── Bootstrap sequence (runs after Bun starts serving) ───────────────────────
+async function bootstrap() {
+  try {
+    // 1. Ensure schedule.crons table exists (idempotent, safe on every restart)
+    await runMigrations()
+
+    // 2. Start the in-process cron scheduler
+    await startScheduler()
+  } catch (err: any) {
+    console.error('⚠️  Bootstrap error (non-fatal):', err.message)
+    // Don't crash the server — DB/MQ might become available later
+  }
+}
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  stopScheduler()
+  await closeRabbitMQ()
+  process.exit(0)
+})
+
+process.on('SIGINT', async () => {
+  stopScheduler()
+  await closeRabbitMQ()
+  process.exit(0)
+})
+
+// Defer bootstrap so the HTTP server is already accepting requests
+setTimeout(bootstrap, 500)
 
 export default { port, fetch: app.fetch, websocket }
 

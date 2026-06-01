@@ -38,7 +38,7 @@ export function StatusCell({
 }) {
   if (!status) {
     return (
-      <div className="flex h-8 items-center justify-center rounded bg-slate-100 dark:bg-slate-900/30 text-[10px] text-slate-600 border border-slate-200 dark:border-sky-900/30/40">
+      <div className="flex h-8 items-center justify-center rounded bg-slate-100 dark:bg-slate-900/30 text-[10px] text-slate-600 border border-slate-200 dark:border-sky-900/40">
         —
       </div>
     )

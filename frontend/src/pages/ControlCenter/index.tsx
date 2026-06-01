@@ -110,49 +110,49 @@ type ActionStyle = {
 // All 6 cards use variations of the sky-blue spectrum (biru langit theme)
 const ACTION_STYLES: Record<string, ActionStyle> = {
   'ticks/regular': {
-    border: 'border-sky-400 dark:border-sky-500/40/35 hover:border-sky-400 dark:border-sky-500/40/75 hover:shadow-[0_0_28px_rgba(14,165,233,0.2)]',
-    bg: 'bg-gradient-to-br from-sky-500/8 to-[#030C18]',
-    icon: 'text-sky-700 dark:text-sky-300 bg-sky-500/12',
+    border: 'border-sky-300/45 dark:border-sky-500/35 hover:border-sky-400 dark:hover:border-sky-500/70 hover:shadow-[0_0_28px_rgba(14,165,233,0.16)]',
+    bg: 'bg-gradient-to-br from-sky-100/80 to-white dark:from-sky-500/[0.08] dark:to-[#030C18]',
+    icon: 'text-sky-700 dark:text-sky-300 bg-sky-100/90 dark:bg-sky-500/10 border-sky-300/55 dark:border-white/10',
     dot: 'bg-sky-400', wave: 'bg-sky-400',
     chip: 'border-sky-400 dark:border-sky-500/40/20 bg-sky-500/[0.08] text-sky-700 dark:text-sky-300/85',
     glow: 'bg-sky-500',
   },
   'ticks/backfill': {
     border: 'border-cyan-400/35 hover:border-cyan-400/75 hover:shadow-[0_0_28px_rgba(34,211,238,0.2)]',
-    bg: 'bg-gradient-to-br from-cyan-500/8 to-[#030C18]',
-    icon: 'text-cyan-300 bg-cyan-500/12',
+    bg: 'bg-gradient-to-br from-cyan-100/80 to-white dark:from-cyan-500/[0.08] dark:to-[#030C18]',
+    icon: 'text-cyan-700 dark:text-cyan-300 bg-cyan-100/90 dark:bg-cyan-500/10 border-cyan-300/55 dark:border-white/10',
     dot: 'bg-cyan-400', wave: 'bg-cyan-400',
     chip: 'border-cyan-400/20 bg-cyan-500/[0.08] text-cyan-300/85',
     glow: 'bg-cyan-500',
   },
   'candles/regular': {
     border: 'border-blue-400/35 hover:border-blue-400/75 hover:shadow-[0_0_28px_rgba(96,165,250,0.2)]',
-    bg: 'bg-gradient-to-br from-blue-500/8 to-[#030C18]',
-    icon: 'text-blue-300 bg-blue-500/12',
+    bg: 'bg-gradient-to-br from-blue-100/80 to-white dark:from-blue-500/[0.08] dark:to-[#030C18]',
+    icon: 'text-blue-700 dark:text-blue-300 bg-blue-100/90 dark:bg-blue-500/10 border-blue-300/55 dark:border-white/10',
     dot: 'bg-blue-400', wave: 'bg-blue-400',
     chip: 'border-blue-400/20 bg-blue-500/[0.08] text-blue-300/85',
     glow: 'bg-blue-500',
   },
   'candles/backfill': {
     border: 'border-sky-500/35 hover:border-sky-500/75 hover:shadow-[0_0_28px_rgba(14,165,233,0.2)]',
-    bg: 'bg-gradient-to-br from-sky-600/8 to-[#030C18]',
-    icon: 'text-sky-200 bg-sky-600/12',
+    bg: 'bg-gradient-to-br from-sky-100/80 to-white dark:from-sky-600/[0.08] dark:to-[#030C18]',
+    icon: 'text-sky-700 dark:text-sky-200 bg-sky-100/90 dark:bg-sky-600/10 border-sky-300/55 dark:border-white/10',
     dot: 'bg-sky-500', wave: 'bg-sky-300',
     chip: 'border-sky-500/20 bg-sky-600/[0.08] text-sky-200/85',
     glow: 'bg-sky-600',
   },
   'maintenance': {
-    border: 'border-indigo-400/35 hover:border-indigo-400/75 hover:shadow-[0_0_28px_rgba(129,140,248,0.2)]',
-    bg: 'bg-gradient-to-br from-indigo-500/8 to-[#030C18]',
-    icon: 'text-sky-700 dark:text-sky-300 bg-indigo-500/12',
-    dot: 'bg-indigo-400', wave: 'bg-indigo-400',
-    chip: 'border-indigo-400/20 bg-indigo-500/[0.08] text-sky-700 dark:text-sky-300/85',
-    glow: 'bg-indigo-500',
+    border: 'border-sky-300/45 hover:border-sky-400/75 hover:shadow-[0_0_28px_rgba(14,165,233,0.18)]',
+    bg: 'bg-gradient-to-br from-sky-100/80 to-white dark:from-sky-500/[0.08] dark:to-[#030C18]',
+    icon: 'text-sky-700 dark:text-sky-300 bg-sky-100/90 dark:bg-sky-500/10 border-sky-300/55 dark:border-white/10',
+    dot: 'bg-sky-400', wave: 'bg-sky-400',
+    chip: 'border-sky-400/20 bg-sky-500/[0.08] text-sky-700 dark:text-sky-300/85',
+    glow: 'bg-sky-500',
   },
   'sync': {
     border: 'border-teal-400/35 hover:border-teal-400/75 hover:shadow-[0_0_28px_rgba(45,212,191,0.2)]',
-    bg: 'bg-gradient-to-br from-teal-500/8 to-[#030C18]',
-    icon: 'text-teal-300 bg-teal-500/12',
+    bg: 'bg-gradient-to-br from-teal-100/80 to-white dark:from-teal-500/[0.08] dark:to-[#030C18]',
+    icon: 'text-teal-700 dark:text-teal-300 bg-teal-100/90 dark:bg-teal-500/10 border-teal-300/55 dark:border-white/10',
     dot: 'bg-teal-400', wave: 'bg-teal-400',
     chip: 'border-teal-400/20 bg-teal-500/[0.08] text-teal-300/85',
     glow: 'bg-teal-500',
@@ -261,7 +261,7 @@ function ActionCard({
         )}
 
         {/* Row 3: Animated waveform signal */}
-        <div className="rounded-lg border border-white/[0.04] bg-black/20 px-3 py-2">
+        <div className="rounded-lg border border-sky-200/70 bg-white/70 px-3 py-2 shadow-inner dark:border-white/[0.04] dark:bg-black/20">
           <WaveformBars waveClass={s.wave} />
         </div>
 
@@ -280,15 +280,15 @@ function ActionCard({
 
         {/* Row 5: Title + description — pinned to bottom of body */}
         <div className="mt-auto">
-          <p className="font-bold text-slate-100 text-[15px] tracking-wide">{action.label}</p>
+          <p className="font-bold text-sky-950 dark:text-slate-100 text-[15px] tracking-wide">{action.label}</p>
           <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed line-clamp-1">{action.description}</p>
         </div>
       </div>
 
       {/* ── Footer ───────────────────────────────────────────────────── */}
-      <div className="relative flex-shrink-0 flex items-center gap-2 bg-[#040E1C]/50 px-5 py-2.5 border-t border-white/[0.05] backdrop-blur-sm">
+      <div className="relative flex-shrink-0 flex items-center gap-2 bg-sky-50/90 px-5 py-2.5 border-t border-sky-200/60 backdrop-blur-sm dark:bg-[#040E1C]/50 dark:border-white/[0.05]">
         <div className={clsx('h-1.5 w-1.5 rounded-full opacity-50 group-hover:opacity-100 transition-opacity', s.dot)} />
-        <span className="font-mono text-[9px] uppercase tracking-widest text-slate-600 group-hover:text-slate-400 dark:text-slate-500 transition-colors truncate">
+        <span className="font-mono text-[9px] uppercase tracking-widest text-sky-800 group-hover:text-sky-700 dark:text-slate-500 dark:group-hover:text-slate-400 transition-colors truncate">
           POST /api/v1{action.path}
         </span>
       </div>

@@ -63,7 +63,7 @@ function AddForm({ onClose }: { onClose: () => void }) {
           <X size={15} />
         </button>
       }
-      className="w-80 flex-shrink-0 animate-in fade-in slide-in-from-right-4 duration-350 border border-slate-300 dark:border-slate-700/60 bg-white dark:bg-[#071628] shadow-2xl" 
+      className="w-80 flex-shrink-0 animate-in fade-in slide-in-from-right-4 duration-300 border border-slate-300 dark:border-slate-700/60 bg-white dark:bg-[#071628] shadow-2xl" 
       bodyClassName="p-4 space-y-4"
     >
       <div className="space-y-4">
@@ -126,7 +126,7 @@ function AddForm({ onClose }: { onClose: () => void }) {
           <button
             onClick={handleSubmit}
             disabled={mut.isPending}
-            className="interactive-element flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white shadow-[0_2px_8px_rgba(79,70,229,0.25)] hover:bg-sky-500 disabled:opacity-50"
+            className="interactive-element flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white shadow-[0_2px_8px_rgba(14,165,233,0.22)] hover:bg-sky-500 disabled:opacity-50"
           >
             <Sparkles size={13} />
             {mut.isPending ? 'Adding…' : 'Submit'}
@@ -158,7 +158,7 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
       <span
         className={clsx(
           'inline-block h-3.5 w-3.5 transform rounded-full bg-white dark:bg-[#071628] shadow-md transition-transform duration-300 ease-out',
-          checked ? 'translate-x-4.5' : 'translate-x-0.5'
+          checked ? 'translate-x-4' : 'translate-x-0.5'
         )}
       />
     </button>
@@ -189,7 +189,7 @@ function TimeframePanel({ onClose }: { onClose: () => void }) {
           <X size={15} />
         </button>
       }
-      className="w-96 h-full flex-shrink-0 animate-in fade-in slide-in-from-right-4 duration-350 border border-slate-300 dark:border-slate-700/60 bg-white dark:bg-[#071628] shadow-2xl"
+      className="w-96 h-full flex-shrink-0 animate-in fade-in slide-in-from-right-4 duration-300 border border-slate-300 dark:border-slate-700/60 bg-white dark:bg-[#071628] shadow-2xl"
       bodyClassName="p-4 flex flex-col h-full min-h-0"
     >
       <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar min-h-0">
@@ -419,7 +419,7 @@ export default function InstrumentsPage() {
             }}
             className={clsx(
               "interactive-element flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold text-slate-900 dark:text-white shadow-[0_2px_8px_rgba(79,70,229,0.25)] transition-all",
-              showForm ? "bg-indigo-500" : "bg-sky-600 hover:bg-sky-500"
+              showForm ? "bg-sky-500" : "bg-sky-600 hover:bg-sky-500"
             )}
           >
             <Plus size={14} strokeWidth={2.5} />
@@ -430,7 +430,7 @@ export default function InstrumentsPage() {
 
       {/* Main Grid Body */}
       <div className="flex min-h-0 flex-1 gap-4">
-        <Card className="flex-1 min-w-0 bg-[#111520] border-slate-200 dark:border-sky-900/30 shadow-sm/80" noPadding scrollable>
+        <Card className="flex-1 min-w-0 bg-[#111520] border-slate-200 dark:border-sky-900/30" noPadding scrollable>
           {isLoading && <TableSkeleton cols={7} rows={8} />}
           {isError && <EmptyState title="Loading failed" message="An error occurred while fetching currency instruments." icon={Ban} />}
           {!isLoading && !isError && data && data.length === 0 && <EmptyState title="No instruments registered" message="Register a currency symbol to start data ingestion." />}
