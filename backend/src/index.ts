@@ -23,10 +23,16 @@ const app = new Hono()
 
 app.onError(globalErrorHandler)
 
+const corsOrigins: string | string[] = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS === '*'
+    ? '*'
+    : process.env.CORS_ORIGINS.split(',').map(o => o.trim())
+  : ['http://localhost:5173', 'http://localhost:4173', 'http://localhost:5174']
+
 app.use(
   '*',
   cors({
-    origin: ['http://localhost:5173', 'http://localhost:4173', 'http://localhost:5174'],
+    origin: corsOrigins,
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type'],
   })

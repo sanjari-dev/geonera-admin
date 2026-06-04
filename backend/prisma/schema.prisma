@@ -13,6 +13,9 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["multiSchema"]
+  // native   = platform saat generate (Windows/Mac dev lokal)
+  // linux-musl-openssl-3.0.x = Alpine 3.17+ (OpenSSL 3.x, tidak ada libssl.so.1.1)
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
