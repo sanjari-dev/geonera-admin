@@ -5,10 +5,17 @@ import { queryClient } from './lib/queryClient'
 import App from './App'
 import './index.css'
 
+import { SecureConfirmProvider } from './components/ui/SecureConfirmModal'
+import ViewportScaler from './components/layout/ViewportScaler'
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <SecureConfirmProvider>
+        <ViewportScaler>
+          <App />
+        </ViewportScaler>
+      </SecureConfirmProvider>
     </QueryClientProvider>
   </StrictMode>
 )

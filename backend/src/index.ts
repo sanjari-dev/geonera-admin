@@ -12,10 +12,12 @@ import progress from './routes/progress'
 import control from './routes/control'
 import crons from './routes/crons'
 import { globalErrorHandler } from './middleware/errorHandler'
+import { actionSecretMiddleware } from './middleware/auth'
 import { sendSuccess } from './lib/response'
 import { runMigrations } from './lib/migrate'
 import { startScheduler, stopScheduler } from './lib/scheduler'
 import { closeRabbitMQ } from './lib/rabbitmq'
+import { wsClients, startBroadcasters } from './lib/broadcaster'
 
 const { upgradeWebSocket, websocket } = createBunWebSocket<ServerWebSocket>()
 
@@ -39,6 +41,7 @@ app.use(
 )
 
 app.use('*', logger())
+app.use('/api/*', actionSecretMiddleware)
 
 app.route('/api/dashboard', dashboard)
 app.route('/api/instruments', instruments)
@@ -50,8 +53,7 @@ app.route('/api/crons', crons)
 
 app.get('/health', (c) => sendSuccess(c, { status: 'ok', timestamp: new Date().toISOString() }))
 
-// WebSocket — clients connect for real-time connection status ping/pong
-const wsClients = new Set<any>()
+// WebSocket clients are managed in lib/broadcaster.ts (re-exported here for the WS handler)
 
 app.get(
   '/ws',
@@ -79,6 +81,9 @@ async function bootstrap() {
 
     // 2. Start the in-process cron scheduler
     await startScheduler()
+
+    // 3. Start WebSocket broadcasters (push live data to all connected clients)
+    startBroadcasters()
   } catch (err: any) {
     console.error('⚠️  Bootstrap error (non-fatal):', err.message)
     // Don't crash the server — DB/MQ might become available later

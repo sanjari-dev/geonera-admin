@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { wsEvents } from '@/lib/wsEvents'
 
 export type WsStatus = 'connecting' | 'connected' | 'disconnected'
 
@@ -21,6 +22,13 @@ export function useWebSocket() {
       retryTimer.current = setTimeout(connect, 5_000)
     }
     socket.onerror = () => setStatus('disconnected')
+    socket.onmessage = (evt) => {
+      if (evt.data === 'pong') return
+      try {
+        const msg = JSON.parse(String(evt.data))
+        if (msg?.type) wsEvents.emit(msg.type, msg.data)
+      } catch {}
+    }
   }
 
   useEffect(() => {

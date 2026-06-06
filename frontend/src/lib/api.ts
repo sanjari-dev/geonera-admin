@@ -1,12 +1,15 @@
 import type {
   ActionDef,
+  ActivityEntry,
   ControlResult,
   HeatmapEntry,
   Instrument,
   KpiStats,
   ProgressEntry,
+  RuntimeStats,
   StateDistribution,
   StatesPage,
+  StorageStats,
   SystemHealth,
   Timeframe,
 } from '@/types'
@@ -29,10 +32,25 @@ async function get<T>(path: string): Promise<T> {
   return body.data as T
 }
 
+let currentActionSecret = ''
+export const setActionSecret = (secret: string) => {
+  currentActionSecret = secret
+}
+
+const getHeaders = () => {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+  if (currentActionSecret) {
+    headers['X-Action-Secret'] = currentActionSecret
+  }
+  return headers
+}
+
 async function post<T>(path: string, body?: unknown): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeaders(),
     body: body ? JSON.stringify(body) : undefined,
   })
   
@@ -47,7 +65,7 @@ async function post<T>(path: string, body?: unknown): Promise<T> {
 async function patch<T>(path: string, body?: unknown): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeaders(),
     body: body ? JSON.stringify(body) : undefined,
   })
   
@@ -65,6 +83,7 @@ export const api = {
     kpis: () => get<KpiStats>('/dashboard/kpis'),
     heatmap: () => get<HeatmapEntry[]>('/dashboard/heatmap'),
     health: () => get<SystemHealth>('/dashboard/health'),
+    activity: (limit = 8) => get<ActivityEntry[]>(`/dashboard/activity?limit=${limit}`),
   },
 
   // ─── Instruments ──────────────────────────────────────────────────────────
@@ -91,13 +110,20 @@ export const api = {
   // ─── States ───────────────────────────────────────────────────────────────
   states: {
     distribution: () => get<StateDistribution[]>('/states/distribution'),
-    recent: (params?: { page?: number; limit?: number; status?: string; jobType?: string; instrumentId?: string }) => {
+    recent: (params?: {
+      page?: number; limit?: number
+      status?: string; jobType?: string; instrumentId?: string
+      minRetry?: number; minStreak?: number; isHoliday?: boolean
+    }) => {
       const q = new URLSearchParams()
       if (params?.page)         q.set('page', String(params.page))
       if (params?.limit)        q.set('limit', String(params.limit))
       if (params?.status)       q.set('status', params.status)
       if (params?.jobType)      q.set('jobType', params.jobType)
       if (params?.instrumentId) q.set('instrumentId', params.instrumentId)
+      if (params?.minRetry   && params.minRetry  > 0) q.set('minRetry',  String(params.minRetry))
+      if (params?.minStreak  && params.minStreak > 0) q.set('minStreak', String(params.minStreak))
+      if (params?.isHoliday !== undefined) q.set('isHoliday', String(params.isHoliday))
       return get<StatesPage>(`/states/recent?${q}`)
     },
   },
@@ -110,6 +136,10 @@ export const api = {
   // ─── Control ──────────────────────────────────────────────────────────────
   control: {
     actions: () => get<ActionDef[]>('/control/actions'),
+    locks: () => get<{ lock_id: string; pid: number; mode: string; granted: boolean; backend_state?: string; held_since?: string; held_seconds?: number }[]>('/control/locks'),
+    queues: () => get<import('@/types').QueueHealth>('/control/queues'),
+    runtime: () => get<RuntimeStats>('/control/runtime'),
+    storage: () => get<StorageStats>('/control/storage'),
     trigger: (key: string) => post<ControlResult>(`/control/${key}`),
   },
 
@@ -139,7 +169,10 @@ export const api = {
     toggleStatus: (id: string) => patch<import('@/types').Cron>(`/crons/${id}/status`),
     trigger: (id: string) => post<import('@/types').CronTriggerResult>(`/crons/${id}/trigger`),
     delete: async (id: string) => {
-      const res = await fetch(`/api/crons/${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/crons/${id}`, { 
+        method: 'DELETE',
+        headers: getHeaders()
+      })
       const body = await res.json() as { success: boolean; data: unknown; error: string | null }
       if (!res.ok || !body.success) throw new Error(body.error ?? `DELETE /crons/${id} → ${res.status}`)
       return body.data

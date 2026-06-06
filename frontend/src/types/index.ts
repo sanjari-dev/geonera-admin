@@ -159,6 +159,72 @@ export interface Cron {
   nextRunAt: string | null   // computed by backend via croner
 }
 
+export interface QueueInfo {
+  name: string
+  consumers: number
+  messages: number
+  state: string
+  error?: string
+}
+
+export interface QueueHealth {
+  queues: QueueInfo[]
+  healthy: number
+  total: number
+}
+
+// ─── Activity Log ─────────────────────────────────────────────────────────────
+export interface ActivityEntry {
+  id: string
+  trigger_src: 'MQ' | 'HTTP'
+  job_name: string
+  triggered_at: string
+  finished_at: string | null
+  duration_ms: number | null
+  trace_id: string | null
+  meta: Record<string, string> | null
+}
+
+// ─── Object Storage Stats ─────────────────────────────────────────────────────
+// Mirrors r2.StorageStatsResult from geonera-ingestion/internal/r2.
+export interface InstrumentStorage {
+  name: string
+  tick_files: number
+  tick_bytes: number
+  tick_mb: number
+  candle_files: number
+  candle_bytes: number
+  candle_mb: number
+  total_files: number
+  total_bytes: number
+  total_mb: number
+}
+
+export interface StorageStats {
+  bucket: string
+  total_files: number
+  total_bytes: number
+  total_mb: number
+  tick_files: number
+  candle_files: number
+  instruments: InstrumentStorage[]
+  computed_at: string
+}
+
+// ─── Ingestion Process Runtime Metrics ───────────────────────────────────────
+// Mirrors runtimecollector.Snapshot from geonera-ingestion/internal/runtimecollector.
+export interface RuntimeStats {
+  cpu_percent: number      // -1 when first sample not yet ready
+  heap_alloc_mb: number    // live heap objects (MB)
+  heap_inuse_mb: number    // heap spans in use (MB)
+  sys_mb: number           // total OS memory (MB)
+  num_goroutine: number
+  num_cpu: number
+  gc_cycles: number
+  avg_gc_pause_ms: number
+  uptime_seconds: number
+}
+
 export interface CronTriggerResult {
   success: boolean
   durationMs: number

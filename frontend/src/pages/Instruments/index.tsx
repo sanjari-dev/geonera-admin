@@ -16,10 +16,12 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { api } from '@/lib/api'
 import type { Instrument, Timeframe } from '@/types'
 import { clsx } from 'clsx'
+import { useSecureConfirm } from '@/components/ui/useSecureConfirm'
 
 // ─── Add Instrument Form ─────────────────────────────────────────────────────
 function AddForm({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient()
+  const { requireConfirmation } = useSecureConfirm()
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -44,13 +46,20 @@ function AddForm({ onClose }: { onClose: () => void }) {
       setError('Symbol name is required')
       return
     }
-    mut.mutate({
-      name: form.name,
-      description: form.description || undefined,
-      assetClass: form.assetClass || undefined,
-      divider: form.divider || undefined,
-      startDate: form.startDate || undefined,
-      isActive: form.isActive,
+    requireConfirmation({
+      title: 'Confirm Create Instrument',
+      message: 'You are about to add a new financial instrument. This will initialize the data ingestion pipeline for this symbol.',
+      actionLabel: 'Create Instrument',
+      onConfirm: () => {
+        mut.mutate({
+          name: form.name,
+          description: form.description || undefined,
+          assetClass: form.assetClass || undefined,
+          divider: form.divider || undefined,
+          startDate: form.startDate || undefined,
+          isActive: form.isActive,
+        })
+      }
     })
   }
 
@@ -59,7 +68,7 @@ function AddForm({ onClose }: { onClose: () => void }) {
       title="Create Instrument" 
       subtitle="Register a new currency or asset"
       action={
-        <button onClick={onClose} className="rounded-lg p-1 text-slate-400 dark:text-slate-500 hover:bg-sky-900/30 hover:text-slate-700 dark:text-slate-300 transition-colors">
+        <button onClick={onClose} className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-sky-50 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-sky-900/30 dark:hover:text-slate-300">
           <X size={15} />
         </button>
       }
@@ -72,7 +81,7 @@ function AddForm({ onClose }: { onClose: () => void }) {
           <input
             type="text"
             placeholder="e.g. eurusd"
-            className="w-full rounded-lg border border-slate-200 dark:border-sky-900/30 shadow-sm bg-[#040E1C] px-3.5 py-2 text-sm text-slate-800 dark:text-sky-100 placeholder-slate-700 outline-none transition-all focus:border-sky-500/80 focus:ring-2 focus:ring-sky-500/10"
+            className="w-full rounded-lg border border-sky-200/70 bg-white px-3.5 py-2 text-sm text-slate-800 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-sky-500/80 focus:ring-2 focus:ring-sky-500/10 dark:border-sky-900/30 dark:bg-[#040E1C] dark:text-sky-100 dark:placeholder:text-slate-700"
             value={form.name}
             onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
           />
@@ -82,7 +91,7 @@ function AddForm({ onClose }: { onClose: () => void }) {
           <input
             type="text"
             placeholder="e.g. Euro / US Dollar"
-            className="w-full rounded-lg border border-slate-200 dark:border-sky-900/30 shadow-sm bg-[#040E1C] px-3.5 py-2 text-sm text-slate-800 dark:text-sky-100 placeholder-slate-700 outline-none transition-all focus:border-sky-500/80 focus:ring-2 focus:ring-sky-500/10"
+            className="w-full rounded-lg border border-sky-200/70 bg-white px-3.5 py-2 text-sm text-slate-800 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-sky-500/80 focus:ring-2 focus:ring-sky-500/10 dark:border-sky-900/30 dark:bg-[#040E1C] dark:text-sky-100 dark:placeholder:text-slate-700"
             value={form.description}
             onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
           />
@@ -90,7 +99,7 @@ function AddForm({ onClose }: { onClose: () => void }) {
         <div>
           <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-400 dark:text-slate-500">Asset Class</label>
           <select
-            className="w-full rounded-lg border border-slate-200 dark:border-sky-900/30 shadow-sm bg-[#040E1C] px-3.5 py-2 text-sm text-slate-800 dark:text-sky-100 outline-none transition-all focus:border-sky-500/80 focus:ring-2 focus:ring-sky-500/10"
+            className="w-full rounded-lg border border-sky-200/70 bg-white px-3.5 py-2 text-sm text-slate-800 shadow-sm outline-none transition-all focus:border-sky-500/80 focus:ring-2 focus:ring-sky-500/10 dark:border-sky-900/30 dark:bg-[#040E1C] dark:text-sky-100"
             value={form.assetClass}
             onChange={(e) => setForm((p) => ({ ...p, assetClass: e.target.value }))}
           >
@@ -104,7 +113,7 @@ function AddForm({ onClose }: { onClose: () => void }) {
           <input
             type="number"
             placeholder="100000"
-            className="w-full rounded-lg border border-slate-200 dark:border-sky-900/30 shadow-sm bg-[#040E1C] px-3.5 py-2 text-sm text-slate-800 dark:text-sky-100 placeholder-slate-700 outline-none transition-all focus:border-sky-500/80 focus:ring-2 focus:ring-sky-500/10"
+            className="w-full rounded-lg border border-sky-200/70 bg-white px-3.5 py-2 text-sm text-slate-800 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-sky-500/80 focus:ring-2 focus:ring-sky-500/10 dark:border-sky-900/30 dark:bg-[#040E1C] dark:text-sky-100 dark:placeholder:text-slate-700"
             value={form.divider}
             onChange={(e) => setForm((p) => ({ ...p, divider: Number(e.target.value) }))}
           />
@@ -114,7 +123,7 @@ function AddForm({ onClose }: { onClose: () => void }) {
           <input
             type="text"
             placeholder="2020-01-01T00:00:00Z"
-            className="w-full rounded-lg border border-slate-200 dark:border-sky-900/30 shadow-sm bg-[#040E1C] px-3.5 py-2 text-sm text-slate-800 dark:text-sky-100 placeholder-slate-700 outline-none transition-all focus:border-sky-500/80 focus:ring-2 focus:ring-sky-500/10"
+            className="w-full rounded-lg border border-sky-200/70 bg-white px-3.5 py-2 text-sm text-slate-800 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-sky-500/80 focus:ring-2 focus:ring-sky-500/10 dark:border-sky-900/30 dark:bg-[#040E1C] dark:text-sky-100 dark:placeholder:text-slate-700"
             value={form.startDate}
             onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))}
           />
@@ -126,14 +135,14 @@ function AddForm({ onClose }: { onClose: () => void }) {
           <button
             onClick={handleSubmit}
             disabled={mut.isPending}
-            className="interactive-element flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white shadow-[0_2px_8px_rgba(14,165,233,0.22)] hover:bg-sky-500 disabled:opacity-50"
+            className="interactive-element flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_2px_8px_rgba(14,165,233,0.22)] hover:bg-sky-500 disabled:opacity-50"
           >
             <Sparkles size={13} />
             {mut.isPending ? 'Adding…' : 'Submit'}
           </button>
           <button
             onClick={onClose}
-            className="interactive-element rounded-lg border border-slate-200 dark:border-sky-900/30 shadow-sm bg-white dark:bg-[#071628] px-4 py-2 text-sm font-medium text-slate-400 dark:text-slate-500 hover:bg-sky-900/30 hover:text-slate-700 dark:text-slate-300"
+            className="interactive-element rounded-lg border border-sky-200/70 bg-white px-4 py-2 text-sm font-medium text-slate-500 shadow-sm hover:bg-sky-50 hover:text-slate-700 dark:border-sky-900/30 dark:bg-[#071628] dark:text-slate-500 dark:hover:bg-sky-900/30 dark:hover:text-slate-300"
           >
             Cancel
           </button>
@@ -151,7 +160,7 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
       disabled={disabled}
       className={clsx(
         'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer items-center rounded-full transition-all duration-300 ease-out border shadow-inner',
-        checked ? 'bg-sky-600 border-sky-500' : 'bg-sky-900/30 border-slate-300 dark:border-slate-700',
+        checked ? 'bg-sky-600 border-sky-500' : 'bg-slate-200 border-slate-300 dark:bg-sky-900/30 dark:border-slate-700',
         disabled && 'cursor-not-allowed opacity-40'
       )}
     >
@@ -168,6 +177,7 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
 // ─── Timeframe Management Panel ────────────────────────────────────────────────
 function TimeframePanel({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient()
+  const { requireConfirmation } = useSecureConfirm()
   const { data: timeframes, isLoading, isError } = useQuery<Timeframe[]>({
     queryKey: ['timeframes'],
     queryFn: api.timeframes.list,
@@ -185,7 +195,7 @@ function TimeframePanel({ onClose }: { onClose: () => void }) {
       title="Timeframe Management"
       subtitle="Manage Dukascopy candle aggregation timeframes"
       action={
-        <button onClick={onClose} className="rounded-lg p-1 text-slate-400 dark:text-slate-500 hover:bg-sky-900/30 hover:text-slate-700 dark:text-slate-300 transition-colors">
+        <button onClick={onClose} className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-sky-50 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-sky-900/30 dark:hover:text-slate-300">
           <X size={15} />
         </button>
       }
@@ -196,7 +206,7 @@ function TimeframePanel({ onClose }: { onClose: () => void }) {
         {isLoading && (
           <div className="flex flex-col gap-2 py-4">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-12 w-full animate-pulse rounded-lg bg-sky-900/30/40" />
+              <div key={i} className="h-12 w-full animate-pulse rounded-lg bg-sky-100/70 dark:bg-sky-900/30" />
             ))}
           </div>
         )}
@@ -224,21 +234,21 @@ function TimeframePanel({ onClose }: { onClose: () => void }) {
                 className={clsx(
                   "flex items-center justify-between p-3 rounded-lg border transition-all duration-150",
                   tf.isActive
-                    ? "border-slate-200 dark:border-sky-900/30 shadow-sm bg-white dark:bg-[#071628]/40 hover:bg-white dark:bg-[#071628]/60"
-                    : "border-slate-900/60 bg-[#040E1C]/20 opacity-70"
+                    ? "border-sky-200/70 bg-white shadow-sm hover:bg-sky-50/70 dark:border-sky-900/30 dark:bg-[#071628]/40 dark:hover:bg-[#071628]/60"
+                    : "border-slate-200 bg-slate-50 opacity-70 dark:border-slate-900/60 dark:bg-[#040E1C]/20"
                 )}
               >
                 <div className="flex items-center gap-3">
                   <div className={clsx(
                     "flex items-center justify-center h-8 w-8 rounded-lg border",
                     tf.isActive 
-                      ? "bg-indigo-500/5 border-sky-500/20 text-sky-600 dark:text-sky-400" 
+                      ? "bg-sky-50 border-sky-500/20 text-sky-600 dark:bg-indigo-500/5 dark:text-sky-400" 
                       : "bg-white dark:bg-[#071628] border-slate-200 dark:border-sky-900/30 shadow-sm text-slate-600"
                   )}>
                     <Clock size={14} className={clsx(tf.isActive && "animate-pulse")} />
                   </div>
                   <div className="flex flex-col">
-                    <span className="font-mono text-sm font-bold uppercase tracking-wider text-slate-100">
+                    <span className="font-mono text-sm font-bold uppercase tracking-wider text-sky-900 dark:text-slate-100">
                       {tf.name}
                     </span>
                     <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
@@ -261,7 +271,14 @@ function TimeframePanel({ onClose }: { onClose: () => void }) {
                   </span>
                   <Toggle
                     checked={tf.isActive}
-                    onChange={() => mutActive.mutate(tf.id)}
+                    onChange={() => {
+                      requireConfirmation({
+                        title: 'Confirm Timeframe Toggle',
+                        message: `You are about to toggle the ingestion aggregation for ${tf.name}.`,
+                        actionLabel: 'Toggle Timeframe',
+                        onConfirm: () => mutActive.mutate(tf.id)
+                      })
+                    }}
                     disabled={mutActive.isPending}
                   />
                 </div>
@@ -279,6 +296,7 @@ const col = createColumnHelper<Instrument>()
 
 export default function InstrumentsPage() {
   const qc = useQueryClient()
+  const { requireConfirmation } = useSecureConfirm()
   const [showForm, setShowForm] = useState(false)
   const [showTimeframes, setShowTimeframes] = useState(false)
   const [sorting, setSorting] = useState<SortingState>([])
@@ -301,18 +319,18 @@ export default function InstrumentsPage() {
   const columns = [
     col.accessor('name', {
       header: 'Symbol',
-      cell: (i) => <span className="font-mono text-sm font-bold uppercase tracking-wide text-slate-100">{i.getValue()}</span>,
+      cell: (i) => <span className="font-mono text-sm font-bold uppercase tracking-wide text-sky-900 dark:text-slate-100">{i.getValue()}</span>,
     }),
     col.accessor('description', {
       header: 'Description',
-      cell: (i) => <span className="text-slate-400 dark:text-slate-500 text-xs font-medium">{i.getValue() ?? <span className="text-slate-600">—</span>}</span>,
+      cell: (i) => <span className="text-xs font-medium text-slate-600 dark:text-slate-500">{i.getValue() ?? <span className="text-slate-600">—</span>}</span>,
     }),
     col.accessor('assetClass', {
       header: 'Asset Class',
       cell: (i) => {
         const v = i.getValue()
         return v
-          ? <span className="rounded-md border border-slate-200 dark:border-sky-900/30 shadow-sm bg-white dark:bg-[#071628]/60 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">{v}</span>
+          ? <span className="rounded-md border border-sky-200/70 bg-white px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-600 shadow-sm dark:border-sky-900/30 dark:bg-[#071628]/60 dark:text-slate-500">{v}</span>
           : <span className="text-slate-600">—</span>
       },
     }),
@@ -340,7 +358,14 @@ export default function InstrumentsPage() {
         <div className="flex items-center gap-3">
           <Toggle
             checked={i.getValue()}
-            onChange={() => mutActive.mutate(i.row.original.id)}
+            onChange={() => {
+              requireConfirmation({
+                title: 'Confirm Status Change',
+                message: 'You are about to change the active status of this instrument.',
+                actionLabel: 'Change Status',
+                onConfirm: () => mutActive.mutate(i.row.original.id)
+              })
+            }}
             disabled={mutActive.isPending}
           />
           <span className={clsx('text-[10px] font-bold uppercase tracking-wider', i.getValue() ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600')}>
@@ -355,7 +380,14 @@ export default function InstrumentsPage() {
         <div className="flex items-center gap-3">
           <Toggle
             checked={i.getValue()}
-            onChange={() => mutPause.mutate(i.row.original.id)}
+            onChange={() => {
+              requireConfirmation({
+                title: 'Confirm Ingestion Pause',
+                message: 'You are about to pause or resume the background ingestion task for this instrument.',
+                actionLabel: 'Confirm Change',
+                onConfirm: () => mutPause.mutate(i.row.original.id)
+              })
+            }}
             disabled={mutPause.isPending}
           />
           <span className="flex items-center gap-1.5">
@@ -383,11 +415,11 @@ export default function InstrumentsPage() {
   return (
     <div className="flex h-full flex-col gap-4 overflow-hidden p-4">
       {/* Header Controls */}
-      <div className="flex flex-shrink-0 items-center justify-between gap-3 bg-[#111520] p-3.5 rounded-xl border border-slate-200 dark:border-sky-900/30 shadow-sm/80">
+      <div className="flex flex-shrink-0 items-center justify-between gap-3 rounded-xl border border-sky-200/70 bg-white/90 p-3.5 shadow-sm dark:border-sky-900/30 dark:bg-[#111520]">
         <div className="relative flex-1 max-w-xs">
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
           <input
-            className="w-full rounded-lg border border-slate-200 dark:border-sky-900/30 shadow-sm bg-[#040E1C] py-2 pl-9 pr-3 text-xs text-slate-700 dark:text-slate-300 placeholder-slate-700 outline-none transition-all focus:border-sky-500/80"
+            className="w-full rounded-lg border border-sky-200/70 bg-white py-2 pl-9 pr-3 text-xs text-slate-700 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-sky-500/80 dark:border-sky-900/30 dark:bg-[#040E1C] dark:text-slate-300 dark:placeholder:text-slate-700"
             placeholder="Filter by Symbol..."
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
@@ -404,8 +436,8 @@ export default function InstrumentsPage() {
             className={clsx(
               "interactive-element flex items-center gap-2 rounded-lg border px-4 py-2 text-xs font-bold transition-all shadow-sm",
               showTimeframes
-                ? "bg-sky-900/30 border-slate-300 dark:border-slate-700 text-sky-600 dark:text-sky-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
-                : "bg-white dark:bg-[#071628] border-slate-200 dark:border-sky-900/30 shadow-sm text-slate-700 dark:text-slate-300 hover:bg-sky-900/30 hover:text-slate-100"
+                ? "border-sky-300 bg-sky-100/80 text-sky-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:border-slate-700 dark:bg-sky-900/30 dark:text-sky-400"
+                : "border-sky-200/70 bg-white text-slate-700 shadow-sm hover:bg-sky-50 hover:text-sky-800 dark:border-sky-900/30 dark:bg-[#071628] dark:text-slate-300 dark:hover:bg-sky-900/30 dark:hover:text-slate-100"
             )}
           >
             <Sliders size={13} />
@@ -418,7 +450,7 @@ export default function InstrumentsPage() {
               setShowTimeframes(false)
             }}
             className={clsx(
-              "interactive-element flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold text-slate-900 dark:text-white shadow-[0_2px_8px_rgba(79,70,229,0.25)] transition-all",
+              "interactive-element flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold text-white shadow-[0_2px_8px_rgba(79,70,229,0.25)] transition-all",
               showForm ? "bg-sky-500" : "bg-sky-600 hover:bg-sky-500"
             )}
           >
@@ -430,20 +462,20 @@ export default function InstrumentsPage() {
 
       {/* Main Grid Body */}
       <div className="flex min-h-0 flex-1 gap-4">
-        <Card className="flex-1 min-w-0 bg-[#111520] border-slate-200 dark:border-sky-900/30" noPadding scrollable>
+        <Card className="min-w-0 flex-1 border-sky-200/70 bg-white/90 dark:border-sky-900/30 dark:bg-[#111520]" noPadding scrollable>
           {isLoading && <TableSkeleton cols={7} rows={8} />}
           {isError && <EmptyState title="Loading failed" message="An error occurred while fetching currency instruments." icon={Ban} />}
           {!isLoading && !isError && data && data.length === 0 && <EmptyState title="No instruments registered" message="Register a currency symbol to start data ingestion." />}
           {!isLoading && !isError && data && data.length > 0 && (
             <div className="h-full w-full overflow-auto">
               <table className="w-full border-collapse">
-                <thead className="sticky top-0 z-10 bg-[#040E1C]/90 border-b border-slate-200 dark:border-sky-900/30 shadow-sm/80 backdrop-blur-md">
+                <thead className="sticky top-0 z-10 border-b border-sky-200/70 bg-sky-50/95 shadow-sm backdrop-blur-md dark:border-sky-900/30 dark:bg-[#040E1C]/90">
                   {table.getHeaderGroups().map((hg) => (
                     <tr key={hg.id}>
                       {hg.headers.map((header) => (
                         <th
                           key={header.id}
-                          className="cursor-pointer select-none px-4 py-3.5 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 transition-colors hover:text-slate-700 dark:text-slate-300"
+                           className="cursor-pointer select-none px-4 py-3.5 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500 transition-colors hover:text-sky-700 dark:text-slate-500 dark:hover:text-slate-300"
                           onClick={header.column.getToggleSortingHandler()}
                         >
                           <div className="flex items-center gap-1">
@@ -457,9 +489,9 @@ export default function InstrumentsPage() {
                     </tr>
                   ))}
                 </thead>
-                <tbody className="divide-y divide-slate-800/40">
+                <tbody className="divide-y divide-sky-100 dark:divide-slate-800/40">
                   {table.getRowModel().rows.map((row) => (
-                    <tr key={row.id} className="interactive-element group hover:bg-sky-900/30/20 border-b border-slate-200 dark:border-sky-900/30 shadow-sm/30 transition-colors duration-150">
+                    <tr key={row.id} className="interactive-element group border-b border-sky-100 transition-colors duration-150 hover:bg-sky-50/80 dark:border-sky-900/30 dark:hover:bg-sky-900/20">
                       {row.getVisibleCells().map((cell) => (
                         <td key={cell.id} className="px-4 py-3 text-xs text-slate-700 dark:text-slate-300">
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}

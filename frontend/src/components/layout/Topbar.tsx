@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useRealtimeQuery } from '@/hooks/useRealtimeQuery'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Database, Wifi, WifiOff, Clock, Maximize, Minimize, LayoutGrid, ChevronDown, Activity, Box, Bell, Layers, Sun, Moon } from 'lucide-react'
 import type { WsStatus } from '@/hooks/useWebSocket'
 import { api } from '@/lib/api'
 import { clsx } from 'clsx'
+import { GRAFANA_URL, JAEGER_URL, PROMETHEUS_URL, RABBITMQ_URL, MINIO_URL, PORTAINER_URL } from '@/lib/env'
 
 const getStoredTheme = (): 'light' | 'dark' => {
   if (typeof window === 'undefined') return 'light'
@@ -21,16 +22,44 @@ const CONNECTED_APPS = [
   },
   {
     name: 'Portainer Infra',
-    route: 'https://192.168.1.8:9443/',
+    route: PORTAINER_URL,
     icon: Box,
     description: 'Docker Container Management',
     external: true,
   },
   {
     name: 'RabbitMQ Console',
-    route: 'http://192.168.1.8:15672/rabbitmq/',
+    route: RABBITMQ_URL,
     icon: Layers,
     description: 'Message Broker Management',
+    external: true,
+  },
+  {
+    name: 'Grafana Dashboards',
+    route: GRAFANA_URL,
+    icon: LayoutGrid,
+    description: 'Metrics Visualization',
+    external: true,
+  },
+  {
+    name: 'Jaeger Tracing',
+    route: JAEGER_URL,
+    icon: Activity,
+    description: 'Distributed Tracing',
+    external: true,
+  },
+  {
+    name: 'Prometheus Queries',
+    route: PROMETHEUS_URL,
+    icon: Database,
+    description: 'Metrics Storage & Querying',
+    external: true,
+  },
+  {
+    name: 'MinIO Console',
+    route: MINIO_URL,
+    icon: Database,
+    description: 'Object Storage Management',
     external: true,
   },
 ]
@@ -72,16 +101,24 @@ export default function Topbar({ wsStatus, onToggleNotifications, hasUnreadNotif
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
+      setIsFullscreen(!!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).mozFullScreenElement || (document as any).msFullscreenElement))
     }
     document.addEventListener('fullscreenchange', handleFullscreenChange)
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange)
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange)
+    
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange)
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange)
+    }
   }, [])
 
-  const { data: health } = useQuery({
+  const { data: health } = useRealtimeQuery('health', {
     queryKey: ['dashboard', 'health'],
     queryFn: api.dashboard.health,
-    refetchInterval: 10_000,
   })
 
   const dbConnected = health?.database === 'connected'
@@ -97,30 +134,41 @@ export default function Topbar({ wsStatus, onToggleNotifications, hasUnreadNotif
   ) || CONNECTED_APPS[0]
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch((err) => {
-        console.error(`Error attempting to enable fullscreen: ${err.message}`)
-      })
+    const docElm = document.documentElement as any;
+    const isFS = document.fullscreenElement || docElm.webkitFullscreenElement || docElm.mozFullScreenElement || docElm.msFullscreenElement;
+    
+    if (!isFS) {
+      const requestFS = docElm.requestFullscreen || docElm.webkitRequestFullscreen || docElm.mozRequestFullScreen || docElm.msRequestFullscreen;
+      if (requestFS) {
+        requestFS.call(docElm).catch((err: any) => {
+          console.error(`Error attempting to enable fullscreen: ${err.message}`)
+        })
+      }
     } else {
-      document.exitFullscreen()
+      const exitFS = document.exitFullscreen || (document as any).webkitExitFullscreen || (document as any).mozCancelFullScreen || (document as any).msExitFullscreen;
+      if (exitFS) {
+        exitFS.call(document).catch((err: any) => {
+          console.error(`Error attempting to exit fullscreen: ${err.message}`)
+        })
+      }
     }
   }
 
   return (
-    <div className="flex h-full w-full items-center justify-between border-b border-sky-200/55 dark:border-sky-900/35 bg-white/90 dark:bg-[#04101E]/95 backdrop-blur-md px-6 shadow-sm relative z-10">
+    <div className="flex h-full w-full items-center justify-between border-b border-sky-200/55 dark:border-sky-900/35 bg-white/90 dark:bg-[#04101E]/95 backdrop-blur-md px-4 shadow-sm relative z-50">
       {/* Left - App Switcher Dropdown */}
       <div className="relative">
         <button
           onClick={() => setIsOpen((prev) => !prev)}
-          className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border border-sky-200/65 dark:border-sky-900/35 bg-white/85 dark:bg-slate-900/80 hover:bg-sky-50 dark:hover:bg-slate-900 hover:border-sky-300/70 dark:hover:border-sky-700/60 shadow-sm transition-all duration-200 relative group text-left cursor-pointer"
+          className="flex items-center gap-2 px-2.5 py-1 rounded-lg border border-sky-200/65 dark:border-sky-900/35 bg-white/85 dark:bg-slate-900/80 hover:bg-sky-50 dark:hover:bg-slate-900 hover:border-sky-300/70 dark:hover:border-sky-700/60 shadow-sm transition-all duration-200 relative group text-left cursor-pointer"
         >
           <div className="flex items-center gap-2">
-            <LayoutGrid size={13} className="text-sky-600 dark:text-sky-400 drop-shadow-[0_0_3px_rgba(56,189,248,0.5)] group-hover:scale-105 transition-transform" />
-            <span className="text-[11px] font-bold tracking-wide text-slate-800 dark:text-sky-100 uppercase">
+            <LayoutGrid size={12} className="text-sky-600 dark:text-sky-400 drop-shadow-[0_0_3px_rgba(56,189,248,0.5)] group-hover:scale-105 transition-transform" />
+            <span className="text-[10px] font-bold tracking-wide text-slate-800 dark:text-sky-100 uppercase">
               {activeApp.name}
             </span>
           </div>
-          <ChevronDown size={12} className={clsx("text-slate-400 dark:text-slate-500 transition-transform duration-200", isOpen && "rotate-180")} />
+          <ChevronDown size={11} className={clsx("text-slate-400 dark:text-slate-500 transition-transform duration-200", isOpen && "rotate-180")} />
         </button>
 
         {/* Dropdown Panel */}
@@ -142,7 +190,7 @@ export default function Topbar({ wsStatus, onToggleNotifications, hasUnreadNotif
                       key={app.name}
                       onClick={() => {
                         if (app.external) {
-                          window.location.href = app.route
+                          window.open(app.route, '_blank')
                         } else {
                           navigate(app.route)
                         }
@@ -177,32 +225,32 @@ export default function Topbar({ wsStatus, onToggleNotifications, hasUnreadNotif
       </div>
 
       {/* Center - Real-time UTC Cockpit Clock */}
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-3 px-4 py-1.5 rounded-lg border border-sky-200/65 dark:border-sky-900/35 bg-white/85 dark:bg-[#071628] shadow-md">
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2.5 px-3 py-1 rounded-lg border border-sky-200/65 dark:border-sky-900/35 bg-white/85 dark:bg-[#071628] shadow-md">
         <div className="flex items-center gap-2">
-          <Clock size={12} className="text-sky-600 dark:text-sky-400 dark:animate-pulse drop-shadow-[0_0_4px_rgba(56,189,248,0.6)]" />
+          <Clock size={11} className="text-sky-600 dark:text-sky-400 dark:animate-pulse drop-shadow-[0_0_4px_rgba(56,189,248,0.6)]" />
           <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 font-mono">SYS_TIME</span>
         </div>
         <div className="h-3 w-px bg-sky-50 dark:bg-[#030C18]" />
         <div className="flex items-center gap-2 font-mono">
-          <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 tabular-nums select-all tracking-wider">
+          <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 tabular-nums select-all tracking-wider">
             {utcDateString}
           </span>
           <span className="text-[10px] font-bold text-slate-600">UTC</span>
-          <span className="text-sm font-bold text-sky-600 dark:text-sky-400 drop-shadow-[0_0_8px_rgba(56,189,248,0.5)] tabular-nums select-all tracking-widest">
+          <span className="text-xs font-bold text-sky-600 dark:text-sky-400 drop-shadow-[0_0_8px_rgba(56,189,248,0.5)] tabular-nums select-all tracking-widest">
             {utcTimeString}
           </span>
         </div>
       </div>
 
       {/* Right — Cockpit HUD Indicators */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-3.5">
         {/* WebSocket */}
         <div className="flex items-center gap-2 group cursor-default">
-          <div className="relative flex items-center justify-center h-6 w-6 rounded bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-sky-900/30 shadow-inner">
+          <div className="relative flex items-center justify-center h-5 w-5 rounded bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-sky-900/30 shadow-inner">
             {wsConnected ? (
-              <Wifi size={12} className="text-emerald-400 drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]" />
-            ) : (
-              <WifiOff size={12} className="text-red-400 drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]" />
+            <Wifi size={10} className="text-emerald-400 drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]" />
+          ) : (
+              <WifiOff size={10} className="text-red-400 drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]" />
             )}
           </div>
           <div className="flex flex-col justify-center">
@@ -218,12 +266,12 @@ export default function Topbar({ wsStatus, onToggleNotifications, hasUnreadNotif
           </div>
         </div>
 
-        <div className="h-6 w-px bg-sky-50 dark:bg-[#030C18]/60" />
+        <div className="h-4 w-px bg-sky-50 dark:bg-[#030C18]/60" />
 
         {/* Database */}
         <div className="flex items-center gap-2 group cursor-default">
-          <div className="relative flex items-center justify-center h-6 w-6 rounded bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-sky-900/30 shadow-inner">
-            <Database size={12} className={clsx(dbConnected ? 'text-emerald-400 drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]' : 'text-red-400 drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]')} />
+          <div className="relative flex items-center justify-center h-5 w-5 rounded bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-sky-900/30 shadow-inner">
+            <Database size={10} className={clsx(dbConnected ? 'text-emerald-400 drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]' : 'text-red-400 drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]')} />
           </div>
           <div className="flex flex-col justify-center">
             <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 leading-none mb-0.5">Database</span>
@@ -238,12 +286,12 @@ export default function Topbar({ wsStatus, onToggleNotifications, hasUnreadNotif
           </div>
         </div>
 
-        <div className="h-6 w-px bg-sky-50 dark:bg-[#030C18]/60" />
+        <div className="h-4 w-px bg-sky-50 dark:bg-[#030C18]/60" />
 
         {/* Notification Button */}
         <button
           onClick={onToggleNotifications}
-          className="interactive-element flex items-center justify-center h-8 w-8 rounded-lg bg-sky-50 dark:bg-slate-900/90 border border-sky-200/65 dark:border-sky-500/35 hover:border-sky-400 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-slate-900 shadow-inner transition-all duration-150 relative group cursor-pointer"
+          className="interactive-element flex items-center justify-center h-7 w-7 rounded-lg bg-sky-50 dark:bg-slate-900/90 border border-sky-200/65 dark:border-sky-500/35 hover:border-sky-400 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-slate-900 shadow-inner transition-all duration-150 relative group cursor-pointer"
           title="System Logs & Alerts"
         >
           <Bell size={13} className="group-hover:scale-105 transition-transform" />
@@ -255,7 +303,7 @@ export default function Topbar({ wsStatus, onToggleNotifications, hasUnreadNotif
         {/* Theme Toggle Button */}
         <button
           onClick={handleToggleTheme}
-          className="interactive-element flex items-center justify-center h-8 w-8 rounded-lg bg-sky-50 dark:bg-slate-900/90 border border-sky-200/65 dark:border-sky-500/35 hover:border-sky-400 text-slate-400 dark:text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-sky-100 dark:hover:bg-slate-900 shadow-inner transition-all duration-150 relative group"
+          className="interactive-element flex items-center justify-center h-7 w-7 rounded-lg bg-sky-50 dark:bg-slate-900/90 border border-sky-200/65 dark:border-sky-500/35 hover:border-sky-400 text-slate-400 dark:text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-sky-100 dark:hover:bg-slate-900 shadow-inner transition-all duration-150 relative group"
           aria-pressed={theme === 'dark'}
           title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
         >
@@ -266,12 +314,12 @@ export default function Topbar({ wsStatus, onToggleNotifications, hasUnreadNotif
           )}
         </button>
 
-        <div className="h-6 w-px bg-sky-50 dark:bg-[#030C18]/60" />
+        <div className="h-4 w-px bg-sky-50 dark:bg-[#030C18]/60" />
 
         {/* Fullscreen Button */}
         <button
           onClick={toggleFullscreen}
-          className="interactive-element flex items-center justify-center h-8 w-8 rounded-lg bg-sky-50 dark:bg-slate-900/90 border border-sky-200/65 dark:border-sky-500/35 hover:border-sky-400 text-slate-400 dark:text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-slate-900 shadow-inner transition-all duration-150 relative group"
+          className="interactive-element flex items-center justify-center h-7 w-7 rounded-lg bg-sky-50 dark:bg-slate-900/90 border border-sky-200/65 dark:border-sky-500/35 hover:border-sky-400 text-slate-400 dark:text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-slate-900 shadow-inner transition-all duration-150 relative group"
           title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
         >
           {isFullscreen ? (

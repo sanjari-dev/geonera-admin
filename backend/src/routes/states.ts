@@ -30,11 +30,18 @@ states.get('/recent', async (c) => {
   const status = c.req.query('status')
   const jobType = c.req.query('jobType')
   const instrumentId = c.req.query('instrumentId')
+  const minRetry  = parseInt(c.req.query('minRetry')  ?? '0')
+  const minStreak = parseInt(c.req.query('minStreak') ?? '0')
+  const isHoliday = c.req.query('isHoliday')           // 'true' | 'false' | undefined
 
   const where: Record<string, unknown> = { isDeleted: false }
-  if (status) where.status = status
-  if (jobType) where.jobType = jobType
+  if (status)       where.status      = status
+  if (jobType)      where.jobType     = jobType
   if (instrumentId) where.instrumentId = instrumentId
+  if (minRetry  > 0) where.retryCount      = { gte: minRetry }
+  if (minStreak > 0) where.notFoundStreak  = { gte: minStreak }
+  if (isHoliday === 'true')  where.isHoliday = true
+  if (isHoliday === 'false') where.isHoliday = false
 
   try {
     const [data, total] = await Promise.all([

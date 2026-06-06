@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { LineChart, Activity, Database, Layers, ExternalLink } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { clsx } from 'clsx'
+import { GRAFANA_URL, JAEGER_URL, PROMETHEUS_URL } from '@/lib/env'
 
 const TABS = [
-  { id: 'grafana', label: 'Grafana Dashboards', icon: LineChart, url: 'http://192.168.1.8:3000' },
-  { id: 'jaeger', label: 'Jaeger Tracing', icon: Activity, url: 'http://192.168.1.8:16686' },
-  { id: 'prometheus', label: 'Prometheus Queries', icon: Database, url: 'http://192.168.1.8:9090' },
+  { id: 'grafana',    label: 'Grafana Dashboards',  icon: LineChart, url: GRAFANA_URL },
+  { id: 'jaeger',     label: 'Jaeger Tracing',       icon: Activity,  url: JAEGER_URL },
+  { id: 'prometheus', label: 'Prometheus Queries',   icon: Database,  url: PROMETHEUS_URL },
 ]
 
 export default function ObservabilityPage() {

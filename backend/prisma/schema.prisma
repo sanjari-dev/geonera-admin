@@ -60,10 +60,10 @@ model Timeframe {
 model State {
   id                String     @id @db.Uuid
   instrumentId      String     @map("instrument_id") @db.Uuid
-  jobType           String     @map("job_type")
+  jobType           JobType    @map("job_type")
   timestamp         DateTime   @db.Timestamptz
-  status            String
-  previousStatus    String?    @map("previous_status")
+  status            Status
+  previousStatus    Status?    @map("previous_status")
   isHoliday         Boolean    @default(false) @map("is_holiday")
   resolvedTickCount Int        @default(0) @map("resolved_tick_count")
   retryCount        Int        @default(0) @map("retry_count")
@@ -85,7 +85,7 @@ model SyncTask {
   id           String     @id @db.Uuid
   instrumentId String     @map("instrument_id") @db.Uuid
   targetDate   DateTime   @map("target_date") @db.Timestamptz
-  status       String     @default("PENDING")
+  status       SyncStatus @default(PENDING)
   createdAt    DateTime   @map("created_at") @db.Timestamptz
   instrument   Instrument @relation(fields: [instrumentId], references: [id])
 
@@ -105,8 +105,8 @@ model Cron {
   cronExpr        String    @map("cron_expr")
   workerKey       String    @map("worker_key")
   triggerMethod   String    @default("RABBITMQ") @map("trigger_method")
-  queueName       String?   @map("queue_name")   // RabbitMQ queue (e.g. jobs.ticks.regular)
-  httpPath        String?   @map("http_path")     // HTTP fallback path (e.g. /ticks/regular)
+  queueName       String?   @map("queue_name")
+  httpPath        String?   @map("http_path")
   status          String    @default("ACTIVE")
   lastTriggeredAt DateTime? @map("last_triggered_at") @db.Timestamptz
   lastResult      Json?     @map("last_result")
@@ -116,3 +116,36 @@ model Cron {
   @@map("crons")
   @@schema("schedule")
 }
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum JobType {
+  TICK
+  CANDLE
+
+  @@map("job_type_enum")
+  @@schema("ingestion")
+}
+
+enum Status {
+  PENDING
+  PROCESSED
+  NOT_FOUND
+  FAILED
+  COMPLETED
+  BROKEN
+  CONFIRMED
+  ABANDONED
+
+  @@map("status_enum")
+  @@schema("ingestion")
+}
+
+enum SyncStatus {
+  PENDING
+  PROCESSED
+
+  @@map("sync_status_enum")
+  @@schema("ingestion")
+}
+

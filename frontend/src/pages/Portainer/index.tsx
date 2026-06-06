@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Card } from '@/components/ui/Card'
+import { PORTAINER_URL } from '@/lib/env'
 
 export default function PortainerPage() {
   const [isLoaded, setIsLoaded] = useState(false)
@@ -21,7 +22,7 @@ export default function PortainerPage() {
                   Connecting to Portainer Engine
                 </span>
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-                  UPLINK: https://192.168.1.8:9443/
+                  UPLINK: {PORTAINER_URL}
                 </span>
               </div>
             </div>
@@ -29,7 +30,7 @@ export default function PortainerPage() {
 
           {/* Iframe */}
           <iframe
-            src="https://192.168.1.8:9443/"
+            src={PORTAINER_URL}
             className="h-full w-full border-0"
             title="Docker Container Management: Portainer"
             sandbox="allow-same-origin allow-scripts allow-popups allow-forms"

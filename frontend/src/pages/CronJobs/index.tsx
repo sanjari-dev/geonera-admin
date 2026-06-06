@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRealtimeQuery } from '@/hooks/useRealtimeQuery'
 import {
   Clock,
   Play,
@@ -21,6 +22,7 @@ import { Card } from '@/components/ui/Card'
 import { api } from '@/lib/api'
 import type { Cron, CronStatus, CronTriggerMethod } from '@/types'
 import { clsx } from 'clsx'
+import { useSecureConfirm } from '@/components/ui/useSecureConfirm'
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 const STATUS_STYLES: Record<CronStatus, string> = {
@@ -220,6 +222,7 @@ const WORKER_PRESETS = [
 
 function AddCronForm({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient()
+  const { requireConfirmation } = useSecureConfirm()
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -332,7 +335,14 @@ function AddCronForm({ onClose }: { onClose: () => void }) {
 
       <div className="flex gap-2 border-t border-slate-200 dark:border-sky-900/30/60 pt-3">
         <button
-          onClick={() => mut.mutate({ ...form, description: form.description || undefined })}
+          onClick={() => {
+            requireConfirmation({
+              title: 'Confirm Create Cron Job',
+              message: 'You are about to create a new scheduled job.',
+              actionLabel: 'Create Job',
+              onConfirm: () => mut.mutate({ ...form, description: form.description || undefined })
+            })
+          }}
           disabled={mut.isPending}
           className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-indigo-500 disabled:opacity-50"
         >
@@ -353,13 +363,13 @@ function AddCronForm({ onClose }: { onClose: () => void }) {
 // ─── Page ──────────────────────────────────────────────────────────────────────
 export default function CronJobsPage() {
   const qc = useQueryClient()
+  const { requireConfirmation } = useSecureConfirm()
   const [showForm, setShowForm] = useState(false)
   const [triggerLog, setTriggerLog] = useState<{ id: string; result: string; success: boolean; ts: string }[]>([])
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError } = useRealtimeQuery('crons', {
     queryKey: ['crons'],
     queryFn: api.crons.list,
-    refetchInterval: 15_000,
   })
 
   const mutToggle = useMutation({
@@ -458,10 +468,29 @@ export default function CronJobsPage() {
                   <CronRow
                     key={cron.id}
                     cron={cron}
-                    onToggle={() => mutToggle.mutate(cron.id)}
-                    onTrigger={() => mutTrigger.mutate(cron.id)}
+                    onToggle={() => {
+                      requireConfirmation({
+                        title: 'Confirm Status Toggle',
+                        message: 'You are about to change the active status of this cron job.',
+                        actionLabel: 'Change Status',
+                        onConfirm: () => mutToggle.mutate(cron.id)
+                      })
+                    }}
+                    onTrigger={() => {
+                      requireConfirmation({
+                        title: 'Confirm Manual Run',
+                        message: 'You are about to manually execute this cron job.',
+                        actionLabel: 'Execute Job',
+                        onConfirm: () => mutTrigger.mutate(cron.id)
+                      })
+                    }}
                     onDelete={() => {
-                      if (confirm(`Delete "${cron.name}"?`)) mutDelete.mutate(cron.id)
+                      requireConfirmation({
+                        title: 'Confirm Delete',
+                        message: `You are about to permanently delete "${cron.name}".`,
+                        actionLabel: 'Delete Job',
+                        onConfirm: () => mutDelete.mutate(cron.id)
+                      })
                     }}
                     isToggling={mutToggle.isPending && mutToggle.variables === cron.id}
                     isTriggering={mutTrigger.isPending && mutTrigger.variables === cron.id}

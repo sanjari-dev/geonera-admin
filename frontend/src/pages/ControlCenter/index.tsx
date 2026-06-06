@@ -7,8 +7,9 @@
  *
  * A single Activity Log on the right aggregates results from both modes.
  */
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRealtimeQuery } from '@/hooks/useRealtimeQuery'
 import {
   ArrowRight,
   CheckCircle2,
@@ -23,6 +24,7 @@ import {
   Play,
   Plus,
   Rabbit,
+  Radio,
   RefreshCw,
   Send,
   Trash2,
@@ -32,8 +34,9 @@ import {
 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { api } from '@/lib/api'
-import type { ActionDef, ControlResult, Cron, CronStatus, CronTriggerMethod } from '@/types'
+import type { ActionDef, ActivityEntry, ControlResult, Cron, CronStatus, CronTriggerMethod } from '@/types'
 import { clsx } from 'clsx'
+import { useSecureConfirm } from '@/components/ui/useSecureConfirm'
 
 // ─── Shared types ────────────────────────────────────────────────────────────
 
@@ -174,7 +177,7 @@ const WAVE_H = [42, 68, 84, 52, 92, 38, 76, 88, 54, 72, 62, 86, 46, 70]
 
 function WaveformBars({ waveClass }: { waveClass: string }) {
   return (
-    <div className="flex items-end gap-[3px] h-10 px-0.5">
+    <div className="flex items-end gap-[2px] h-7 px-0.5">
       {WAVE_H.map((h, i) => (
         <div
           key={i}
@@ -191,10 +194,11 @@ function WaveformBars({ waveClass }: { waveClass: string }) {
 }
 
 function ActionCard({
-  action, isLoading, onTrigger, cron,
+  action, isLoading, isRunning, onTrigger, cron,
 }: {
   action: ActionDef
   isLoading: boolean
+  isRunning: boolean
   onTrigger: () => void
   cron?: import('@/types').Cron | null
 }) {
@@ -202,10 +206,29 @@ function ActionCard({
   const s = ACTION_STYLES[action.key] ?? ACTION_STYLES['sync']
   const meta = ACTION_META[action.key]
 
-  const nextRun = cron?.nextRunAt
-    ? new Date(cron.nextRunAt).toISOString().slice(11, 16) + ' UTC'
-    : null
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
   const isScheduled = cron?.status === 'ACTIVE'
+  
+  let countdown = null
+  let nextRunTime = null
+  if (cron?.nextRunAt && isScheduled) {
+    const nextRunDate = new Date(cron.nextRunAt)
+    nextRunTime = nextRunDate.toISOString().slice(11, 16) + ' UTC'
+    
+    let diff = nextRunDate.getTime() - now
+    if (diff < 0) diff = 0
+    const h = Math.floor(diff / 3600000)
+    const m = Math.floor((diff % 3600000) / 60000)
+    const sec = Math.floor((diff % 60000) / 1000)
+    countdown = h > 0 
+      ? `${h}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
+      : `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
+  }
 
   return (
     <button
@@ -215,42 +238,53 @@ function ActionCard({
         'group relative flex h-full flex-col text-left overflow-hidden rounded-2xl border transition-all duration-500',
         'hover:-translate-y-0.5 hover:scale-[1.005] active:scale-[0.995]',
         'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none',
-        s.border, s.bg
+        isRunning
+          ? 'border-sky-400/60 ring-2 ring-sky-400/30 shadow-[0_0_16px_rgba(56,189,248,0.25)]'
+          : clsx(s.border, s.bg)
       )}
     >
+      {/* Running pulse ring */}
+      {isRunning && (
+        <div className="pointer-events-none absolute inset-0 rounded-2xl border-2 border-sky-400/40 animate-pulse" />
+      )}
+
       {/* Hover overlay */}
       <div className="absolute inset-0 bg-white dark:bg-[#071628]/[0.015] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
       {/* ── Body ─────────────────────────────────────────────────────── */}
-      <div className="relative flex flex-1 flex-col p-5 gap-4">
+      <div className="relative flex flex-1 flex-col p-3 gap-2">
 
-        {/* Row 1: Icon + spinner */}
+        {/* Row 1: Icon + status badge */}
         <div className="flex items-start justify-between">
           <div className="relative">
-            {/* Ambient glow behind icon */}
-            <div className={clsx('absolute -inset-2 rounded-full blur-xl opacity-25 transition-opacity duration-500 group-hover:opacity-50', s.glow)} />
-            <div className={clsx('relative flex items-center justify-center h-12 w-12 rounded-xl border border-white/10 transition-transform duration-300 group-hover:scale-110 shadow-lg', s.icon)}>
-              <Icon size={22} strokeWidth={2.2} />
+            <div className={clsx('absolute -inset-1 rounded-full blur-xl opacity-20 transition-opacity duration-500 group-hover:opacity-40', s.glow)} />
+            <div className={clsx('relative flex items-center justify-center h-9 w-9 rounded-lg border border-white/10 transition-transform duration-300 group-hover:scale-110 shadow-md', s.icon)}>
+              <Icon size={17} strokeWidth={2.2} />
             </div>
           </div>
-          {isLoading
-            ? <RefreshCw size={14} className="text-slate-400 dark:text-slate-500 animate-spin" />
-            : isScheduled
-              ? <span className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-widest text-emerald-400/70">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_4px_rgba(52,211,153,0.8)]" />
-                  Scheduled
-                </span>
-              : null}
+          {isRunning
+            ? <span className="flex items-center gap-1 rounded border border-sky-400/30 bg-sky-400/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-sky-400">
+                <Radio size={8} className="animate-pulse" />
+                Running
+              </span>
+            : isLoading
+              ? <RefreshCw size={12} className="text-slate-400 dark:text-slate-500 animate-spin" />
+              : isScheduled
+                ? <span className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-widest text-emerald-400/70">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_4px_rgba(52,211,153,0.8)]" />
+                    Scheduled
+                  </span>
+                : null}
         </div>
 
         {/* Row 2: Metadata chips */}
         {meta && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1">
             {[meta.frequency, meta.mode, meta.lock].map((label) => (
               <span
                 key={label}
                 className={clsx(
-                  'rounded border px-2 py-0.5 text-[10px] font-semibold tracking-wide whitespace-nowrap',
+                  'rounded border px-1.5 py-0 text-[9px] font-semibold tracking-wide whitespace-nowrap leading-5',
                   s.chip
                 )}
               >
@@ -261,32 +295,34 @@ function ActionCard({
         )}
 
         {/* Row 3: Animated waveform signal */}
-        <div className="rounded-lg border border-sky-200/70 bg-white/70 px-3 py-2 shadow-inner dark:border-white/[0.04] dark:bg-black/20">
+        <div className="rounded border border-sky-200/70 bg-white/70 px-2 py-1 shadow-inner dark:border-white/[0.04] dark:bg-black/20">
           <WaveformBars waveClass={s.wave} />
         </div>
 
-        {/* Row 4: Cron schedule line */}
-        <div className="flex items-center justify-between text-[10px]">
-          <div className="flex items-center gap-1.5">
-            <Clock size={9} className="text-slate-600" />
-            <code className="font-mono text-slate-600">{cron?.cronExpr ?? '—'}</code>
+        {/* Row 4: Cron schedule + countdown */}
+        <div className="flex items-center justify-between text-[9px]">
+          <div className="flex items-center gap-1">
+            <Clock size={8} className="text-slate-600" />
+            <code className="font-mono text-slate-600 truncate max-w-[80px]">{cron?.cronExpr ?? '—'}</code>
           </div>
-          {nextRun && (
-            <span className="font-mono text-slate-600 tabular-nums">
-              ⏭ {nextRun}
+          {countdown ? (
+            <span className="font-mono font-bold text-sky-600 dark:text-sky-400 tabular-nums bg-sky-500/10 px-1 py-0.5 rounded text-[9px]">
+              -{countdown}
             </span>
-          )}
+          ) : nextRunTime ? (
+            <span className="font-mono text-slate-600 tabular-nums">⏭ {nextRunTime}</span>
+          ) : null}
         </div>
 
-        {/* Row 5: Title + description — pinned to bottom of body */}
+        {/* Row 5: Title + description — pinned to bottom */}
         <div className="mt-auto">
-          <p className="font-bold text-sky-950 dark:text-slate-100 text-[15px] tracking-wide">{action.label}</p>
-          <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed line-clamp-1">{action.description}</p>
+          <p className="font-bold text-sky-950 dark:text-slate-100 text-[13px] tracking-wide leading-tight">{action.label}</p>
+          <p className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500 leading-snug line-clamp-1">{action.description}</p>
         </div>
       </div>
 
       {/* ── Footer ───────────────────────────────────────────────────── */}
-      <div className="relative flex-shrink-0 flex items-center gap-2 bg-sky-50/90 px-5 py-2.5 border-t border-sky-200/60 backdrop-blur-sm dark:bg-[#040E1C]/50 dark:border-white/[0.05]">
+      <div className="relative flex-shrink-0 flex items-center gap-1.5 bg-sky-50/90 px-3 py-1.5 border-t border-sky-200/60 backdrop-blur-sm dark:bg-[#040E1C]/50 dark:border-white/[0.05]">
         <div className={clsx('h-1.5 w-1.5 rounded-full opacity-50 group-hover:opacity-100 transition-opacity', s.dot)} />
         <span className="font-mono text-[9px] uppercase tracking-widest text-sky-800 group-hover:text-sky-700 dark:text-slate-500 dark:group-hover:text-slate-400 transition-colors truncate">
           POST /api/v1{action.path}
@@ -296,10 +332,178 @@ function ActionCard({
   )
 }
 
+function NextRunHeroCard({
+  action, isLoading, isRunning, onTrigger, cron,
+}: {
+  action: ActionDef
+  isLoading: boolean
+  isRunning: boolean
+  onTrigger: () => void
+  cron: import('@/types').Cron
+}) {
+  const Icon = ACTION_ICONS[action.key] ?? Cpu
+  const s = ACTION_STYLES[action.key] ?? ACTION_STYLES['sync']
+  const meta = ACTION_META[action.key]
+
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const nextRunDate = new Date(cron.nextRunAt!)
+  const nextRunTime = nextRunDate.toISOString().slice(11, 16) + ' UTC'
+
+  let diff = nextRunDate.getTime() - now
+  if (diff < 0) diff = 0
+  const h = Math.floor(diff / 3600000)
+  const m = Math.floor((diff % 3600000) / 60000)
+  const sec = Math.floor((diff % 60000) / 1000)
+  const countdown = h > 0 
+    ? `${h}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
+    : `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
+
+  return (
+    <div className={clsx(
+      "relative overflow-hidden rounded-2xl border p-4 flex items-center justify-between gap-5",
+      isRunning ? 'border-sky-400/60 ring-2 ring-sky-400/30 shadow-[0_0_20px_rgba(56,189,248,0.2)]' : clsx(s.border, s.bg)
+    )}>
+      {isRunning && <div className="pointer-events-none absolute inset-0 rounded-2xl border-2 border-sky-400/40 animate-pulse" />}
+      <div className="absolute inset-0 bg-white dark:bg-[#071628]/[0.015] opacity-0 hover:opacity-100 transition-opacity duration-300" />
+      <div className={clsx('absolute -right-10 -top-10 h-64 w-64 rounded-full blur-[100px] opacity-20', s.glow)} />
+
+      <div className="relative flex items-center gap-4 flex-1 min-w-0">
+        <div className={clsx('relative flex-shrink-0 flex items-center justify-center h-14 w-14 rounded-xl border border-white/10 shadow-lg', s.icon)}>
+          <Icon size={26} strokeWidth={2} />
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            {isRunning && (
+              <span className="flex items-center gap-1 rounded border border-sky-400/30 bg-sky-400/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-sky-400">
+                <Radio size={8} className="animate-pulse" />
+                Running
+              </span>
+            )}
+            <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-emerald-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+              Next Scheduled Run
+            </span>
+          </div>
+          <h2 className="text-xl font-bold text-sky-950 dark:text-slate-100 tracking-tight truncate">{action.label}</h2>
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 truncate">{action.description}</p>
+          {meta && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {[meta.frequency, meta.mode, meta.lock].map((label) => (
+                <span key={label} className={clsx('rounded border px-2 py-0.5 text-[10px] font-semibold tracking-wide whitespace-nowrap', s.chip)}>
+                  {label}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="relative flex flex-col items-end text-right border-l border-slate-200/50 dark:border-sky-900/30 pl-5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 mb-0.5">
+          <Clock size={12} />
+          <span className="text-[10px] font-bold uppercase tracking-widest">Runs In</span>
+        </div>
+        <div className="text-3xl font-mono font-bold text-sky-600 dark:text-sky-400 tabular-nums tracking-tighter drop-shadow-[0_0_12px_rgba(56,189,248,0.3)]">
+          {countdown}
+        </div>
+        <code className="mt-0.5 font-mono text-[10px] text-slate-500">at {nextRunTime} UTC</code>
+        <button
+          onClick={onTrigger}
+          disabled={isLoading}
+          className="mt-3 flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all hover:bg-sky-500 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+        >
+          {isLoading ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
+          Trigger Now
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function SecondNextRunCard({
+  action, isLoading, isRunning, onTrigger, cron,
+}: {
+  action: ActionDef
+  isLoading: boolean
+  isRunning: boolean
+  onTrigger: () => void
+  cron: import('@/types').Cron
+}) {
+  const Icon = ACTION_ICONS[action.key] ?? Cpu
+  const s = ACTION_STYLES[action.key] ?? ACTION_STYLES['sync']
+  
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const nextRunDate = new Date(cron.nextRunAt!)
+  const nextRunTime = nextRunDate.toISOString().slice(11, 16) + ' UTC'
+
+  let diff = nextRunDate.getTime() - now
+  if (diff < 0) diff = 0
+  const h = Math.floor(diff / 3600000)
+  const m = Math.floor((diff % 3600000) / 60000)
+  const sec = Math.floor((diff % 60000) / 1000)
+  const countdown = h > 0 
+    ? `${h}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
+    : `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
+
+  return (
+    <div className={clsx(
+      "relative h-full overflow-hidden rounded-2xl border p-4 flex flex-col justify-between shadow-sm",
+      isRunning ? 'border-sky-400/60 ring-2 ring-sky-400/30 shadow-[0_0_16px_rgba(56,189,248,0.2)]' : clsx(s.border, s.bg)
+    )}>
+      {isRunning && <div className="pointer-events-none absolute inset-0 rounded-2xl border-2 border-sky-400/40 animate-pulse" />}
+      <div className="absolute inset-0 bg-white dark:bg-[#071628]/[0.015] opacity-0 hover:opacity-100 transition-opacity duration-300" />
+      <div className={clsx('absolute -right-6 -bottom-6 h-32 w-32 rounded-full blur-[60px] opacity-20', s.glow)} />
+
+      <div className="relative flex items-center gap-3">
+        <div className={clsx('relative flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-xl border border-white/10 shadow-md', s.icon)}>
+          <Icon size={17} strokeWidth={2} />
+        </div>
+        <div>
+          {isRunning
+            ? <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-sky-400">
+                <Radio size={7} className="animate-pulse" /> Running
+              </span>
+            : <span className="text-[9px] font-semibold uppercase tracking-widest text-slate-400">Up Next</span>
+          }
+          <h3 className="text-sm font-bold text-sky-950 dark:text-slate-100 leading-tight">{action.label}</h3>
+        </div>
+      </div>
+
+      <div className="relative mt-2 flex items-end justify-between">
+        <div>
+          <code className="font-mono text-[10px] text-slate-400 dark:text-slate-500">at {nextRunTime} UTC</code>
+          <div className="text-xl font-mono font-bold text-sky-600 dark:text-sky-400 tabular-nums drop-shadow-sm tracking-tighter">
+            {countdown}
+          </div>
+        </div>
+        <button
+          onClick={onTrigger}
+          disabled={isLoading}
+          title="Trigger Now"
+          className="flex items-center justify-center h-9 w-9 rounded-xl bg-sky-600 text-white shadow-md transition-all hover:bg-sky-500 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+        >
+          {isLoading ? <RefreshCw size={15} className="animate-spin" /> : <Send size={15} />}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function ManualTriggersTab({
   onLog,
 }: { onLog: (entry: Omit<LogEntry, 'id'>) => void }) {
   const [pending, setPending] = useState<Record<string, boolean>>({})
+  const qc = useQueryClient()
 
   const { data: actions, isLoading, isError } = useQuery({
     queryKey: ['control', 'actions'],
@@ -308,35 +512,66 @@ function ManualTriggersTab({
   })
 
   // Cross-reference cron schedules by workerKey to show live schedule data on each card
-  const { data: crons } = useQuery({
+  const { data: crons } = useRealtimeQuery('crons', {
     queryKey: ['crons'],
     queryFn: api.crons.list,
-    refetchInterval: 30_000,
   })
   const getCron = (key: string) => crons?.find((c) => c.workerKey === key) ?? null
 
+  // Poll activity log to detect which workers are currently running.
+  // job_name uses dots (ticks.regular); action.key uses slashes (ticks/regular).
+  const { data: activityEntries } = useRealtimeQuery('activity', {
+    queryKey: ['control', 'activity'],
+    queryFn: () => api.dashboard.activity(20),
+  })
+  const runningJobNames = new Set(
+    (activityEntries ?? [])
+      .filter((e: ActivityEntry) => e.finished_at === null && e.duration_ms === null)
+      .map((e: ActivityEntry) => e.job_name)
+  )
+  const isJobRunning = (key: string) => runningJobNames.has(key.replace('/', '.'))
+  const { requireConfirmation } = useSecureConfirm()
+
+  // Ticking state for the parent to cycle cards automatically when timer hits zero
+  // MUST BE CALLED BEFORE EARLY RETURNS (React Hook Rule)
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
   const trigger = async (action: ActionDef) => {
-    setPending((p) => ({ ...p, [action.key]: true }))
-    try {
-      const result = await api.control.trigger(action.key) as ControlResult
-      onLog({
-        label: action.label,
-        mode: 'REST',
-        success: result.success ?? true,
-        ts: new Date().toISOString().slice(11, 19),
-        detail: `HTTP ${result.httpStatus ?? 202} · /api/v1${action.path}`,
-      })
-    } catch (err: any) {
-      onLog({
-        label: action.label,
-        mode: 'REST',
-        success: false,
-        ts: new Date().toISOString().slice(11, 19),
-        detail: err.message ?? 'Daemon unreachable',
-      })
-    } finally {
-      setPending((p) => ({ ...p, [action.key]: false }))
-    }
+    requireConfirmation({
+      title: 'Confirm Manual Trigger',
+      message: `You are about to manually trigger the ${action.label} worker.`,
+      actionLabel: 'Trigger Worker',
+      onConfirm: async () => {
+        setPending((p) => ({ ...p, [action.key]: true }))
+        try {
+          const result = await api.control.trigger(action.key) as ControlResult
+          qc.invalidateQueries({ queryKey: ['crons'] })
+          setTimeout(() => qc.invalidateQueries({ queryKey: ['crons'] }), 1500)
+          setTimeout(() => qc.invalidateQueries({ queryKey: ['crons'] }), 3500)
+          onLog({
+            label: action.label,
+            mode: 'REST',
+            success: result.success ?? true,
+            ts: new Date().toISOString().slice(11, 19),
+            detail: `HTTP ${result.httpStatus ?? 202} · /api/v1${action.path}`,
+          })
+        } catch (err: any) {
+          onLog({
+            label: action.label,
+            mode: 'REST',
+            success: false,
+            ts: new Date().toISOString().slice(11, 19),
+            detail: err.message ?? 'Daemon unreachable',
+          })
+        } finally {
+          setPending((p) => ({ ...p, [action.key]: false }))
+        }
+      }
+    })
   }
 
   if (isLoading) return (
@@ -350,23 +585,63 @@ function ManualTriggersTab({
     </div>
   )
 
+  const activeCrons = crons
+    ?.filter((c) => c.status === 'ACTIVE' && c.nextRunAt && new Date(c.nextRunAt).getTime() > now)
+    ?.sort((a, b) => new Date(a.nextRunAt!).getTime() - new Date(b.nextRunAt!).getTime())
+
+  const nextRunCron = activeCrons?.[0]
+  const secondNextCron = activeCrons?.[1]
+
+  const nextRunAction = nextRunCron ? actions?.find(a => a.key === nextRunCron.workerKey) : null
+  const secondNextAction = secondNextCron ? actions?.find(a => a.key === secondNextCron.workerKey) : null
+
   return (
-    <div
-      className="grid h-full gap-3"
-      style={{
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gridTemplateRows: 'repeat(2, 1fr)',
-      }}
-    >
-      {actions?.map((action) => (
-        <ActionCard
-          key={action.key}
-          action={action}
-          cron={getCron(action.key)}
-          isLoading={pending[action.key] ?? false}
-          onTrigger={() => trigger(action)}
-        />
-      ))}
+    <div className="flex h-full flex-col gap-4 overflow-auto pb-4">
+      {/* Top Large Card for Next Run */}
+      {nextRunAction && nextRunCron && (
+        <>
+          <div className="shrink-0 w-full grid grid-cols-[1fr] lg:grid-cols-[2fr_1fr] xl:grid-cols-[2.5fr_1fr] gap-4">
+            <NextRunHeroCard
+              action={nextRunAction}
+              cron={nextRunCron}
+              isLoading={pending[nextRunAction.key] ?? false}
+              isRunning={isJobRunning(nextRunAction.key)}
+              onTrigger={() => trigger(nextRunAction)}
+            />
+            {secondNextAction && secondNextCron && (
+              <SecondNextRunCard
+                action={secondNextAction}
+                cron={secondNextCron}
+                isLoading={pending[secondNextAction.key] ?? false}
+                isRunning={isJobRunning(secondNextAction.key)}
+                onTrigger={() => trigger(secondNextAction)}
+              />
+            )}
+          </div>
+          
+          <div className="my-1 border-t border-slate-200 dark:border-sky-900/50" />
+        </>
+      )}
+
+      {/* Grid for all actions */}
+      <div
+        className="grid gap-2 flex-1"
+        style={{
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gridAutoRows: 'minmax(180px, 1fr)',
+        }}
+      >
+        {actions?.map((action) => (
+          <ActionCard
+            key={action.key}
+            action={action}
+            cron={getCron(action.key)}
+            isLoading={pending[action.key] ?? false}
+            isRunning={isJobRunning(action.key)}
+            onTrigger={() => trigger(action)}
+          />
+        ))}
+      </div>
     </div>
   )
 }
@@ -480,6 +755,7 @@ const WORKER_PRESETS = [
 
 function AddCronForm({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient()
+  const { requireConfirmation } = useSecureConfirm()
   const [form, setForm] = useState({
     name: '', description: '', cronExpr: '*/5 * * * *',
     workerKey: 'maintenance', triggerMethod: 'RABBITMQ' as CronTriggerMethod,
@@ -538,7 +814,14 @@ function AddCronForm({ onClose }: { onClose: () => void }) {
       </div>
       {error && <p className="rounded border border-rose-500/10 bg-rose-500/5 px-3 py-2 text-xs text-rose-400">{error}</p>}
       <div className="flex gap-2 border-t border-slate-200 dark:border-sky-900/30 shadow-sm/60 pt-3">
-        <button onClick={() => mut.mutate({ ...form, description: form.description || undefined })}
+        <button onClick={() => {
+          requireConfirmation({
+            title: 'Confirm Create Cron Job',
+            message: 'You are about to create a new scheduled job.',
+            actionLabel: 'Create Job',
+            onConfirm: () => mut.mutate({ ...form, description: form.description || undefined })
+          })
+        }}
           disabled={mut.isPending}
           className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:bg-sky-500 disabled:opacity-50">
           <Zap size={12} />{mut.isPending ? 'Creating…' : 'Create'}
@@ -551,23 +834,28 @@ function AddCronForm({ onClose }: { onClose: () => void }) {
 
 function ScheduledJobsTab({ onLog }: { onLog: (entry: Omit<LogEntry, 'id'>) => void }) {
   const qc = useQueryClient()
+  const { requireConfirmation } = useSecureConfirm()
   const [showForm, setShowForm] = useState(false)
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError } = useRealtimeQuery('crons', {
     queryKey: ['crons'],
     queryFn: api.crons.list,
-    refetchInterval: 15_000,
   })
 
   const mutToggle = useMutation({
     mutationFn: api.crons.toggleStatus,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['crons'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['crons'] })
+      setTimeout(() => qc.invalidateQueries({ queryKey: ['crons'] }), 1500)
+    },
   })
 
   const mutTrigger = useMutation({
     mutationFn: (id: string) => api.crons.trigger(id),
     onSuccess: (result, id) => {
       qc.invalidateQueries({ queryKey: ['crons'] })
+      setTimeout(() => qc.invalidateQueries({ queryKey: ['crons'] }), 1500)
+      setTimeout(() => qc.invalidateQueries({ queryKey: ['crons'] }), 3500)
       const cron = data?.find((c) => c.id === id)
       onLog({
         label: cron?.name ?? id,
@@ -631,11 +919,36 @@ function ScheduledJobsTab({ onLog }: { onLog: (entry: Omit<LogEntry, 'id'>) => v
                 </tr>
               </thead>
               <tbody>
-                {data.map((cron) => (
+                {[...data].sort((a, b) => {
+                  if (!a.nextRunAt) return 1
+                  if (!b.nextRunAt) return -1
+                  return new Date(a.nextRunAt).getTime() - new Date(b.nextRunAt).getTime()
+                }).map((cron) => (
                   <CronRow key={cron.id} cron={cron}
-                    onToggle={() => mutToggle.mutate(cron.id)}
-                    onTrigger={() => mutTrigger.mutate(cron.id)}
-                    onDelete={() => { if (confirm(`Delete "${cron.name}"?`)) mutDelete.mutate(cron.id) }}
+                    onToggle={() => {
+                      requireConfirmation({
+                        title: 'Confirm Status Toggle',
+                        message: 'You are about to change the active status of this cron job.',
+                        actionLabel: 'Change Status',
+                        onConfirm: () => mutToggle.mutate(cron.id)
+                      })
+                    }}
+                    onTrigger={() => {
+                      requireConfirmation({
+                        title: 'Confirm Manual Run',
+                        message: 'You are about to manually execute this cron job.',
+                        actionLabel: 'Execute Job',
+                        onConfirm: () => mutTrigger.mutate(cron.id)
+                      })
+                    }}
+                    onDelete={() => {
+                      requireConfirmation({
+                        title: 'Confirm Delete',
+                        message: `You are about to permanently delete "${cron.name}".`,
+                        actionLabel: 'Delete Job',
+                        onConfirm: () => mutDelete.mutate(cron.id)
+                      })
+                    }}
                     isToggling={mutToggle.isPending && mutToggle.variables === cron.id}
                     isTriggering={mutTrigger.isPending && mutTrigger.variables === cron.id}
                     isDeleting={mutDelete.isPending && mutDelete.variables === cron.id}
@@ -655,12 +968,116 @@ function ScheduledJobsTab({ onLog }: { onLog: (entry: Omit<LogEntry, 'id'>) => v
   )
 }
 
+// ─── Last Run panel ───────────────────────────────────────────────────────────
+
+const WORKER_LABELS: Record<string, string> = {
+  'maintenance':     'Maintenance',
+  'sync':            'Outbox Sync',
+  'ticks/regular':   'Ticks Regular',
+  'ticks/backfill':  'Ticks Backfill',
+  'candles/regular': 'Candles Regular',
+  'candles/backfill':'Candles Backfill',
+}
+
+function relTime(iso: string | null): string {
+  if (!iso) return 'never'
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
+  if (s < 60) return `${s}s ago`
+  const m = Math.floor(s / 60)
+  if (m < 60) return `${m}m ago`
+  const h = Math.floor(m / 60)
+  return h < 24 ? `${h}h ago` : `${Math.floor(h / 24)}d ago`
+}
+
+function LastRunPanel({ crons }: { crons: Cron[] }) {
+  // Sort by lastTriggeredAt desc — most recent first
+  const sorted = [...crons]
+    .filter(c => c.lastTriggeredAt)
+    .sort((a, b) => new Date(b.lastTriggeredAt!).getTime() - new Date(a.lastTriggeredAt!).getTime())
+
+  const never = crons.filter(c => !c.lastTriggeredAt)
+
+  return (
+    <div className="space-y-1">
+      {[...sorted, ...never].map(cron => {
+        const result = cron.lastResult as Record<string, unknown> | null
+        const success = result?.success as boolean | undefined
+        const durationMs = result?.durationMs as number | undefined
+        const method = result?.method as string | undefined
+        const label = WORKER_LABELS[cron.workerKey] ?? cron.name
+
+        return (
+          <div
+            key={cron.id}
+            className={clsx(
+              'flex items-center gap-2 rounded-lg border px-2.5 py-1.5 transition-colors',
+              !cron.lastTriggeredAt ? 'border-slate-800/30 bg-transparent opacity-40' :
+              success === true  ? 'border-emerald-500/15 bg-emerald-500/5' :
+              success === false ? 'border-rose-500/15 bg-rose-500/5' :
+              'border-slate-800/40 bg-[#040E1C]/20'
+            )}
+          >
+            {/* Status icon */}
+            <span className="flex-shrink-0">
+              {!cron.lastTriggeredAt ? (
+                <Clock size={11} className="text-slate-600" />
+              ) : success === true ? (
+                <CheckCircle2 size={11} className="text-emerald-400" />
+              ) : success === false ? (
+                <XCircle size={11} className="text-rose-400" />
+              ) : (
+                <Clock size={11} className="text-slate-500" />
+              )}
+            </span>
+
+            {/* Name */}
+            <span className="flex-1 min-w-0 text-[11px] font-semibold text-slate-300 truncate">
+              {label}
+            </span>
+
+            {/* Method badge */}
+            {method && (
+              <span className={clsx(
+                'flex-shrink-0 rounded px-1 py-0.5 text-[8px] font-bold uppercase tracking-wide border',
+                method === 'rabbitmq'
+                  ? 'text-purple-400 bg-purple-500/10 border-purple-500/20'
+                  : 'text-blue-400 bg-blue-500/10 border-blue-500/20'
+              )}>
+                {method === 'rabbitmq' ? 'MQ' : 'REST'}
+              </span>
+            )}
+
+            {/* Duration */}
+            {durationMs !== undefined && (
+              <span className="flex-shrink-0 text-[9px] font-mono text-slate-600 tabular-nums">
+                {durationMs}ms
+              </span>
+            )}
+
+            {/* Time ago */}
+            <span className="flex-shrink-0 text-[9px] font-mono text-slate-600 tabular-nums">
+              {relTime(cron.lastTriggeredAt)}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ─── Page root ────────────────────────────────────────────────────────────────
+
+import { ActiveLocks } from '@/components/ui/ActiveLocks'
 
 export default function ControlCenterPage() {
   const [tab, setTab] = useState<Tab>('manual')
   const [log, setLog] = useState<LogEntry[]>([])
   const [logCounter, setLogCounter] = useState(0)
+
+  const { data: allCrons } = useRealtimeQuery('crons', {
+    queryKey: ['crons'],
+    queryFn: api.crons.list,
+  })
 
   const pushLog = (entry: Omit<LogEntry, 'id'>) => {
     setLog((prev) => [{ ...entry, id: logCounter }, ...prev.slice(0, 49)])
@@ -670,16 +1087,19 @@ export default function ControlCenterPage() {
   return (
     <div className="flex h-full flex-col gap-4 overflow-hidden p-4">
       {/* ── Banner ──────────────────────────────────────────────────────────── */}
-      <div className="flex flex-shrink-0 items-center gap-3 rounded-xl border border-amber-500/10 bg-amber-500/5 px-4 py-3">
-        <Cpu size={14} className="flex-shrink-0 text-amber-400" />
-        <p className="text-xs text-slate-400 dark:text-slate-500 leading-snug">
-          <span className="font-semibold text-amber-400">Dual-mode trigger system</span>
-          {' '}· Manual via{' '}
-          <span className="font-mono text-blue-400">REST → Go Daemon (192.168.1.8:8080)</span>
-          {' '}· Scheduled via{' '}
-          <span className="font-mono text-purple-400">RabbitMQ → Go Consumer (192.168.1.8:5672)</span>
-          {' '}· Both return HTTP 202 Accepted (async processing)
-        </p>
+      <div className="flex flex-shrink-0 items-center justify-between gap-4">
+        <div className="flex flex-1 items-center gap-3 rounded-xl border border-amber-500/10 bg-amber-500/5 px-4 py-3">
+          <Cpu size={14} className="flex-shrink-0 text-amber-400" />
+          <p className="text-xs text-slate-400 dark:text-slate-500 leading-snug">
+            <span className="font-semibold text-amber-400">Dual-mode trigger system</span>
+            {' '}· Manual via{' '}
+            <span className="font-mono text-blue-400">REST → Go Daemon (192.168.1.8:8080)</span>
+            {' '}· Scheduled via{' '}
+            <span className="font-mono text-purple-400">RabbitMQ → Go Consumer (192.168.1.8:5672)</span>
+            {' '}· Both return HTTP 202 Accepted (async processing)
+          </p>
+        </div>
+        <ActiveLocks />
       </div>
 
       {/* ── Tab bar ─────────────────────────────────────────────────────────── */}
@@ -715,26 +1135,43 @@ export default function ControlCenterPage() {
           {tab === 'scheduled' && <ScheduledJobsTab onLog={pushLog} />}
         </div>
 
-        {/* Unified activity log */}
-        <Card
-          title="Activity Log"
-          subtitle={`${log.length} entries · REST + MQ`}
-          className="w-72 flex-shrink-0"
-          scrollable
-          noPadding
-          bodyClassName="p-3 space-y-2"
-        >
-          {log.length === 0 ? (
-            <div className="flex h-40 flex-col items-center justify-center gap-2 text-center">
-              <div className="h-10 w-10 rounded-full border border-slate-200 dark:border-sky-900/30 shadow-sm flex items-center justify-center">
-                <Send size={16} className="text-slate-700 dark:text-slate-300" />
+        {/* Right sidebar — Last Run + Activity Log stacked */}
+        <div className="w-72 flex-shrink-0 flex flex-col gap-3 min-h-0">
+
+          {/* Last Run — persists across sessions (from DB) */}
+          <Card
+            title="Last Run"
+            subtitle="Per-job last execution · refresh 10s"
+            className="flex-shrink-0"
+          >
+            {allCrons && allCrons.length > 0
+              ? <LastRunPanel crons={allCrons} />
+              : <p className="text-xs text-slate-600 italic">No cron jobs found</p>
+            }
+          </Card>
+
+          {/* Activity Log — session-only, reset on page refresh */}
+          <Card
+            title="Activity Log"
+            subtitle={`${log.length} entries · this session`}
+            className="flex-1 min-h-0"
+            scrollable
+            noPadding
+            bodyClassName="p-3 space-y-2"
+          >
+            {log.length === 0 ? (
+              <div className="flex h-32 flex-col items-center justify-center gap-2 text-center">
+                <div className="h-9 w-9 rounded-full border border-slate-200 dark:border-sky-900/30 shadow-sm flex items-center justify-center">
+                  <Send size={14} className="text-slate-700 dark:text-slate-300" />
+                </div>
+                <p className="text-xs text-slate-600">No triggers yet<br />this session.</p>
               </div>
-              <p className="text-xs text-slate-600">No activity yet.<br />Trigger a job or fire a cron.</p>
-            </div>
-          ) : (
-            log.map((entry) => <LogItem key={entry.id} entry={entry} />)
-          )}
-        </Card>
+            ) : (
+              log.map((entry) => <LogItem key={entry.id} entry={entry} />)
+            )}
+          </Card>
+
+        </div>
       </div>
     </div>
   )

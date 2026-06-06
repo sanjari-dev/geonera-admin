@@ -92,6 +92,38 @@ dashboard.get('/heatmap', async (c) => {
   }
 })
 
+// Returns the most recent job trigger events from the activity log.
+// Queries ingestion.job_activity_logs directly — no dependency on the Go daemon.
+dashboard.get('/activity', async (c) => {
+  try {
+    const limit = Math.min(Number(c.req.query('limit') ?? 10), 50)
+    const rows = await prisma.$queryRaw<{
+      id: string
+      trigger_src: string
+      job_name: string
+      triggered_at: Date
+      finished_at: Date | null
+      duration_ms: bigint | null
+      trace_id: string | null
+      meta: Record<string, string> | null
+    }[]>`
+      SELECT id::text, trigger_src, job_name, triggered_at, finished_at,
+             duration_ms, trace_id,
+             meta
+      FROM   ingestion.job_activity_logs
+      ORDER  BY (finished_at IS NULL) DESC, triggered_at DESC
+      LIMIT  ${limit}
+    `
+    return sendSuccess(c, rows.map(r => ({
+      ...r,
+      duration_ms: r.duration_ms != null ? Number(r.duration_ms) : null,
+    })))
+  } catch (error) {
+    console.error('[dashboard/activity]', error)
+    return sendError(c, 'Failed to fetch activity log', 500)
+  }
+})
+
 dashboard.get('/health', async (c) => {
   try {
     const db = await prisma.$queryRaw`SELECT 1`.then(() => 'connected').catch(() => 'disconnected')
