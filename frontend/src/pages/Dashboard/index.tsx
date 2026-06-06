@@ -42,19 +42,9 @@ const QUEUE_LABELS: Record<string, string> = {
   'jobs.sync':             'Sync',
 }
 
-function QueueHealthPanel({ queues, healthy, total }: { queues: QueueInfo[]; healthy: number; total: number }) {
-  const allHealthy = healthy === total
-
+function QueueHealthPanel({ queues }: { queues: QueueInfo[] }) {
   return (
     <div className="space-y-2">
-      {/* Alert only when unhealthy */}
-      {!allHealthy && (
-        <div className="flex items-center gap-1.5 rounded-lg border border-rose-500/20 bg-rose-500/5 px-2.5 py-1.5 text-[11px] font-semibold text-rose-400">
-          <XCircle size={11} className="flex-shrink-0" />
-          {healthy}/{total} queues active — check ingestion service
-        </div>
-      )}
-
       {/* 2-column compact grid */}
       <div className="grid grid-cols-2 gap-1">
         {queues.map((q) => {
@@ -729,7 +719,7 @@ export default function DashboardPage() {
                 </p>
               )}
               {queues.data && (
-                <QueueHealthPanel queues={queues.data.queues} healthy={queues.data.healthy} total={queues.data.total} />
+                <QueueHealthPanel queues={queues.data.queues} />
               )}
             </Card>
           </div>
@@ -945,6 +935,10 @@ const JOB_LABELS: Record<string, string> = {
   'sync':             'Sync',
 }
 
+// Jobs still "running" (finished_at IS NULL) after this long are stale — the
+// ingestion process was killed without writing a completion record.
+const STALE_RUNNING_MS = 5 * 60 * 1_000 // 5 minutes
+
 function durationLabel(ms: number | null, finishedAt: string | null): { text: string; color: string } {
   if (ms === null && finishedAt === null) return { text: 'running…', color: 'text-sky-400 animate-pulse' }
   if (ms === null) return { text: '—', color: 'text-slate-400' }
@@ -1004,9 +998,14 @@ function RecentActivity({ entries, isLoading }: { entries: ActivityEntry[] | und
         {entries && entries.length > 0 && (
           <div className="space-y-0.5">
             {entries.map((e) => {
-              const isMQ    = e.trigger_src === 'MQ'
-              const dur     = durationLabel(e.duration_ms, e.finished_at)
-              const running = e.finished_at === null && e.duration_ms === null
+              const isMQ      = e.trigger_src === 'MQ'
+              const noFinish  = e.finished_at === null && e.duration_ms === null
+              const elapsedMs = Date.now() - new Date(e.triggered_at).getTime()
+              const stale     = noFinish && elapsedMs >= STALE_RUNNING_MS
+              const running   = noFinish && !stale
+              const dur       = stale
+                ? { text: '—', color: 'text-slate-500' }
+                : durationLabel(e.duration_ms, e.finished_at)
 
               return (
                 <div
@@ -1033,7 +1032,7 @@ function RecentActivity({ entries, isLoading }: { entries: ActivityEntry[] | und
                     {JOB_LABELS[e.job_name] ?? e.job_name}
                   </span>
 
-                  {/* Running indicator */}
+                  {/* Running indicator (only when genuinely in-flight) */}
                   {running && <Radio size={9} className="flex-shrink-0 animate-pulse text-sky-400" />}
 
                   {/* Duration */}

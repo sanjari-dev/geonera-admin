@@ -104,7 +104,7 @@ async function pollActivity() {
              duration_ms, trace_id, meta
       FROM   ingestion.job_activity_logs
       ORDER  BY (finished_at IS NULL) DESC, triggered_at DESC
-      LIMIT  20
+      LIMIT  5
     `
     emitIfChanged('activity', rows.map((r) => ({ ...r, duration_ms: r.duration_ms != null ? Number(r.duration_ms) : null })))
   } catch {}
