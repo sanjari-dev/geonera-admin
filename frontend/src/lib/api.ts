@@ -99,6 +99,8 @@ export const api = {
     }) => post<Instrument>('/instruments', body),
     toggleActive: (id: string) => patch<Instrument>(`/instruments/${id}/active`),
     togglePause: (id: string) => patch<Instrument>(`/instruments/${id}/pause`),
+    bulkSetActive: (ids: string[], value: boolean) => patch<Instrument[]>('/instruments/bulk/active', { ids, value }),
+    bulkSetPause: (ids: string[], value: boolean) => patch<Instrument[]>('/instruments/bulk/pause', { ids, value }),
   },
 
   // ─── Timeframes ─────────────────────────────────────────────────────────────

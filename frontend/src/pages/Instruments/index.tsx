@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import type { InputHTMLAttributes } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   createColumnHelper,
@@ -8,8 +9,9 @@ import {
   getSortedRowModel,
   useReactTable,
   type SortingState,
+  type RowSelectionState,
 } from '@tanstack/react-table'
-import { Plus, Search, PauseCircle, Ban, Sparkles, X, Sliders, Clock } from 'lucide-react'
+import { Plus, Search, PauseCircle, Ban, Sparkles, X, Sliders, Clock, Power, Play } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { TableSkeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -174,6 +176,24 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
   )
 }
 
+// ─── Indeterminate Checkbox ───────────────────────────────────────────────────
+function IndeterminateCheckbox({ indeterminate, ...rest }: { indeterminate?: boolean } & InputHTMLAttributes<HTMLInputElement>) {
+  const ref = useRef<HTMLInputElement>(null!)
+  useEffect(() => {
+    if (typeof indeterminate === 'boolean') {
+      ref.current.indeterminate = !rest.checked && indeterminate
+    }
+  }, [indeterminate, rest.checked])
+  return (
+    <input
+      type="checkbox"
+      ref={ref}
+      className="h-4 w-4 cursor-pointer rounded border-sky-300 accent-sky-600 disabled:cursor-not-allowed disabled:opacity-40"
+      {...rest}
+    />
+  )
+}
+
 // ─── Timeframe Management Panel ────────────────────────────────────────────────
 function TimeframePanel({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient()
@@ -301,6 +321,7 @@ export default function InstrumentsPage() {
   const [showTimeframes, setShowTimeframes] = useState(false)
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState('')
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['instruments'],
@@ -315,8 +336,46 @@ export default function InstrumentsPage() {
     mutationFn: api.instruments.togglePause,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['instruments'] }),
   })
+  const mutBulkActive = useMutation({
+    mutationFn: ({ ids, value }: { ids: string[]; value: boolean }) => api.instruments.bulkSetActive(ids, value),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['instruments'] }); setRowSelection({}) },
+  })
+  const mutBulkPause = useMutation({
+    mutationFn: ({ ids, value }: { ids: string[]; value: boolean }) => api.instruments.bulkSetPause(ids, value),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['instruments'] }); setRowSelection({}) },
+  })
+
+  const selectedIds = Object.keys(rowSelection)
 
   const columns = [
+    col.display({
+      id: 'select',
+      enableSorting: false,
+      header: ({ table }) => (
+        <label
+          className="flex cursor-pointer items-center justify-center"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <IndeterminateCheckbox
+            checked={table.getIsAllPageRowsSelected()}
+            indeterminate={table.getIsSomeRowsSelected()}
+            onChange={table.getToggleAllPageRowsSelectedHandler()}
+          />
+        </label>
+      ),
+      cell: ({ row }) => (
+        <label
+          className="flex cursor-pointer items-center justify-center -mx-4 -my-3 px-4 py-3"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <IndeterminateCheckbox
+            checked={row.getIsSelected()}
+            disabled={!row.getCanSelect()}
+            onChange={row.getToggleSelectedHandler()}
+          />
+        </label>
+      ),
+    }),
     col.accessor('name', {
       header: 'Symbol',
       cell: (i) => <span className="font-mono text-sm font-bold uppercase tracking-wide text-sky-900 dark:text-slate-100">{i.getValue()}</span>,
@@ -404,9 +463,12 @@ export default function InstrumentsPage() {
   const table = useReactTable({
     data: data ?? [],
     columns,
-    state: { sorting, globalFilter },
+    state: { sorting, globalFilter, rowSelection },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
+    onRowSelectionChange: setRowSelection,
+    enableRowSelection: true,
+    getRowId: (row) => row.id,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -475,8 +537,11 @@ export default function InstrumentsPage() {
                       {hg.headers.map((header) => (
                         <th
                           key={header.id}
-                           className="cursor-pointer select-none px-4 py-3.5 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500 transition-colors hover:text-sky-700 dark:text-slate-500 dark:hover:text-slate-300"
-                          onClick={header.column.getToggleSortingHandler()}
+                          className={clsx(
+                            "px-4 py-3.5 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500 transition-colors dark:text-slate-500",
+                            header.column.getCanSort() && "cursor-pointer select-none hover:text-sky-700 dark:hover:text-slate-300"
+                          )}
+                          onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
                         >
                           <div className="flex items-center gap-1">
                             {flexRender(header.column.columnDef.header, header.getContext())}
@@ -508,6 +573,88 @@ export default function InstrumentsPage() {
         {showForm && <AddForm onClose={() => setShowForm(false)} />}
         {showTimeframes && <TimeframePanel onClose={() => setShowTimeframes(false)} />}
       </div>
+
+      {/* ─── Bulk Action Bar ──────────────────────────────────────────────────── */}
+      {selectedIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 flex items-center gap-2.5 rounded-2xl border border-sky-200/80 bg-white/95 px-5 py-3 shadow-2xl shadow-sky-900/10 backdrop-blur-md dark:border-sky-900/50 dark:bg-[#0d1b2e]/95">
+          {/* Selection count */}
+          <span className="font-mono text-xs font-bold text-sky-700 dark:text-sky-400 whitespace-nowrap">
+            {selectedIds.length} selected
+          </span>
+          <div className="mx-1 h-4 w-px bg-slate-200 dark:bg-slate-700" />
+
+          {/* Active group */}
+          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-600">Active</span>
+          <button
+            onClick={() => requireConfirmation({
+              title: 'Activate Selected Instruments',
+              message: `You are about to set ${selectedIds.length} instrument(s) to Active (Online). This will enable their ingestion pipelines.`,
+              actionLabel: 'Activate',
+              onConfirm: () => mutBulkActive.mutate({ ids: selectedIds, value: true }),
+            })}
+            disabled={mutBulkActive.isPending || mutBulkPause.isPending}
+            className="flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-sky-500 disabled:opacity-50 transition-colors"
+          >
+            <Power size={11} />
+            Online
+          </button>
+          <button
+            onClick={() => requireConfirmation({
+              title: 'Deactivate Selected Instruments',
+              message: `You are about to set ${selectedIds.length} instrument(s) to Inactive (Offline). This will disable their ingestion pipelines.`,
+              actionLabel: 'Deactivate',
+              onConfirm: () => mutBulkActive.mutate({ ids: selectedIds, value: false }),
+            })}
+            disabled={mutBulkActive.isPending || mutBulkPause.isPending}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm hover:bg-slate-50 disabled:opacity-50 transition-colors dark:border-sky-900/40 dark:bg-[#071628] dark:text-slate-400 dark:hover:bg-sky-900/20"
+          >
+            <Ban size={11} />
+            Offline
+          </button>
+
+          <div className="mx-1 h-4 w-px bg-slate-200 dark:bg-slate-700" />
+
+          {/* Ingestion group */}
+          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-600">Ingestion</span>
+          <button
+            onClick={() => requireConfirmation({
+              title: 'Resume Ingestion for Selected',
+              message: `You are about to resume background ingestion for ${selectedIds.length} instrument(s).`,
+              actionLabel: 'Resume',
+              onConfirm: () => mutBulkPause.mutate({ ids: selectedIds, value: false }),
+            })}
+            disabled={mutBulkActive.isPending || mutBulkPause.isPending}
+            className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-500 disabled:opacity-50 transition-colors"
+          >
+            <Play size={11} />
+            Resume
+          </button>
+          <button
+            onClick={() => requireConfirmation({
+              title: 'Pause Ingestion for Selected',
+              message: `You are about to pause background ingestion for ${selectedIds.length} instrument(s).`,
+              actionLabel: 'Pause',
+              onConfirm: () => mutBulkPause.mutate({ ids: selectedIds, value: true }),
+            })}
+            disabled={mutBulkActive.isPending || mutBulkPause.isPending}
+            className="flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-400 disabled:opacity-50 transition-colors"
+          >
+            <PauseCircle size={11} />
+            Pause
+          </button>
+
+          <div className="mx-1 h-4 w-px bg-slate-200 dark:bg-slate-700" />
+
+          {/* Clear selection */}
+          <button
+            onClick={() => setRowSelection({})}
+            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-400"
+            title="Clear selection"
+          >
+            <X size={13} />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

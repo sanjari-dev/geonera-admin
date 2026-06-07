@@ -88,6 +88,49 @@ instruments.post('/', zValidator('json', createSchema, validationHook), async (c
   }
 })
 
+const bulkSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1, 'At least one ID required'),
+  value: z.boolean(),
+})
+
+instruments.patch('/bulk/active', zValidator('json', bulkSchema, validationHook), async (c) => {
+  const { ids, value } = c.req.valid('json')
+  try {
+    await prisma.instrument.updateMany({
+      where: { id: { in: ids } },
+      data: { isActive: value },
+    })
+    const updated = await prisma.instrument.findMany({
+      where: { id: { in: ids } },
+      select: selectFields,
+      orderBy: { name: 'asc' },
+    })
+    return sendSuccess(c, updated)
+  } catch (error) {
+    console.error('[instruments/bulkActive]', error)
+    return sendError(c, 'Failed to bulk update active state', 500)
+  }
+})
+
+instruments.patch('/bulk/pause', zValidator('json', bulkSchema, validationHook), async (c) => {
+  const { ids, value } = c.req.valid('json')
+  try {
+    await prisma.instrument.updateMany({
+      where: { id: { in: ids } },
+      data: { isPause: value },
+    })
+    const updated = await prisma.instrument.findMany({
+      where: { id: { in: ids } },
+      select: selectFields,
+      orderBy: { name: 'asc' },
+    })
+    return sendSuccess(c, updated)
+  } catch (error) {
+    console.error('[instruments/bulkPause]', error)
+    return sendError(c, 'Failed to bulk update pause state', 500)
+  }
+})
+
 instruments.patch('/:id/active', async (c) => {
   const id = c.req.param('id')
   try {
