@@ -3,7 +3,7 @@ import { sendSuccess, sendError } from '../lib/response'
 
 const control = new Hono()
 
-const DAEMON_URL = () => process.env.GO_DAEMON_URL ?? 'http://192.168.1.8:8080/api/v1'
+const DAEMON_URL = () => process.env.GO_DAEMON_URL!
 import { prisma } from '../lib/prisma'
 
 // Exact Go Fiber routes from internal/api/routes.go
@@ -28,7 +28,7 @@ control.get('/actions', (c) => {
 // Fetches consumer count per worker queue from RabbitMQ Management API.
 // Returns 200 with partial data if management API is unreachable (graceful degradation).
 control.get('/queues', async (c) => {
-  const mgmtBase = process.env.RABBITMQ_MANAGEMENT_URL ?? 'http://192.168.1.8:15672/api'
+  const mgmtBase = process.env.RABBITMQ_MANAGEMENT_URL!
   const user = process.env.RABBITMQ_USERNAME ?? 'sans'
   const pass = process.env.RABBITMQ_PASSWORD ?? '!PQssw0rd123'
   const vhost = 'geonera'

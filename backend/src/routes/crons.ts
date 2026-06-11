@@ -163,7 +163,7 @@ crons.post('/:id/trigger', async (c) => {
       success = true
       resultMeta = { method: 'rabbitmq', queue: cron.queueName }
     } else if (cron.httpPath) {
-      const url = `${process.env.GO_DAEMON_URL ?? 'http://192.168.1.8:8080/api/v1'}${cron.httpPath}`
+      const url = `${process.env.GO_DAEMON_URL!}${cron.httpPath}`
       const res = await fetch(url, { method: 'POST', signal: AbortSignal.timeout(15_000) })
       success = res.ok
       resultMeta = { method: 'http', httpStatus: res.status, path: cron.httpPath }

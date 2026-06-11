@@ -200,7 +200,7 @@ async function pollHealth() {
 
 async function pollRuntime() {
   if (wsClients.size === 0) return
-  const daemonUrl = process.env.GO_DAEMON_URL ?? 'http://192.168.1.8:8080/api/v1'
+  const daemonUrl = process.env.GO_DAEMON_URL!
   try {
     const res = await fetch(`${daemonUrl}/runtime`, { signal: AbortSignal.timeout(3_000) })
     if (!res.ok) return
@@ -211,7 +211,7 @@ async function pollRuntime() {
 
 async function pollQueues() {
   if (wsClients.size === 0) return
-  const mgmtBase = process.env.RABBITMQ_MANAGEMENT_URL ?? 'http://192.168.1.8:15672/api'
+  const mgmtBase = process.env.RABBITMQ_MANAGEMENT_URL!
   const user = process.env.RABBITMQ_USERNAME ?? 'sans'
   const pass = process.env.RABBITMQ_PASSWORD ?? '!PQssw0rd123'
   const queueNames = ['jobs.ticks.regular','jobs.ticks.backfill','jobs.candles.regular','jobs.candles.backfill','jobs.maintenance','jobs.sync']

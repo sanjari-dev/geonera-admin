@@ -1093,9 +1093,9 @@ export default function ControlCenterPage() {
           <p className="text-xs text-slate-400 dark:text-slate-500 leading-snug">
             <span className="font-semibold text-amber-400">Dual-mode trigger system</span>
             {' '}· Manual via{' '}
-            <span className="font-mono text-blue-400">REST → Go Daemon (192.168.1.8:8080)</span>
+            <span className="font-mono text-blue-400">REST → Go Daemon (:8080)</span>
             {' '}· Scheduled via{' '}
-            <span className="font-mono text-purple-400">RabbitMQ → Go Consumer (192.168.1.8:5672)</span>
+            <span className="font-mono text-purple-400">RabbitMQ → Go Consumer (:5672)</span>
             {' '}· Both return HTTP 202 Accepted (async processing)
           </p>
         </div>

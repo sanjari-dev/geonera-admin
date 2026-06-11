@@ -113,7 +113,7 @@ async function _fire(cron: CronRow): Promise<void> {
       console.log(`⏰ [${cron.name}] → ${cron.queueName} ✓`)
     } else if (cron.httpPath) {
       // ── Fallback: HTTP POST to Go Daemon ─────────────────────────────
-      const url = `${process.env.GO_DAEMON_URL ?? 'http://192.168.1.8:8080/api/v1'}${cron.httpPath}`
+      const url = `${process.env.GO_DAEMON_URL!}${cron.httpPath}`
       const res = await fetch(url, {
         method: 'POST',
         signal: AbortSignal.timeout(10_000),
