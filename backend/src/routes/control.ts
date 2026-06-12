@@ -28,9 +28,12 @@ control.get('/actions', (c) => {
 // Fetches consumer count per worker queue from RabbitMQ Management API.
 // Returns 200 with partial data if management API is unreachable (graceful degradation).
 control.get('/queues', async (c) => {
-  const mgmtBase = process.env.RABBITMQ_MANAGEMENT_URL!
-  const user = process.env.RABBITMQ_USERNAME ?? 'sans'
-  const pass = process.env.RABBITMQ_PASSWORD ?? '!PQssw0rd123'
+  const mgmtBase = process.env.RABBITMQ_MANAGEMENT_URL
+  const user = process.env.RABBITMQ_USERNAME
+  const pass = process.env.RABBITMQ_PASSWORD
+  if (!mgmtBase || !user || !pass) {
+    return sendError(c, 'RABBITMQ_MANAGEMENT_URL / RABBITMQ_USERNAME / RABBITMQ_PASSWORD env vars not set', 503)
+  }
   const vhost = 'geonera'
   const queueNames = [
     'jobs.ticks.regular',

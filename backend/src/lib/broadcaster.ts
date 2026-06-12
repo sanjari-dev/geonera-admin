@@ -211,9 +211,10 @@ async function pollRuntime() {
 
 async function pollQueues() {
   if (wsClients.size === 0) return
-  const mgmtBase = process.env.RABBITMQ_MANAGEMENT_URL!
-  const user = process.env.RABBITMQ_USERNAME ?? 'sans'
-  const pass = process.env.RABBITMQ_PASSWORD ?? '!PQssw0rd123'
+  const mgmtBase = process.env.RABBITMQ_MANAGEMENT_URL
+  const user = process.env.RABBITMQ_USERNAME
+  const pass = process.env.RABBITMQ_PASSWORD
+  if (!mgmtBase || !user || !pass) return
   const queueNames = ['jobs.ticks.regular','jobs.ticks.backfill','jobs.candles.regular','jobs.candles.backfill','jobs.maintenance','jobs.sync']
   try {
     const auth = Buffer.from(`${user}:${pass}`).toString('base64')
