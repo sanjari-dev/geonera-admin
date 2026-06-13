@@ -5,6 +5,7 @@ import { prisma } from '../lib/prisma'
 import { sendSuccess, sendError } from '../lib/response'
 import { reloadJob, getNextRun } from '../lib/scheduler'
 import { publishToQueue } from '../lib/rabbitmq'
+import { daemonFetch } from '../lib/daemon'
 
 const crons = new Hono()
 
@@ -109,12 +110,15 @@ crons.patch('/:id', zValidator('json', updateSchema), async (c) => {
   }
 })
 
-/** PATCH /api/crons/:id/status — toggle ACTIVE ↔ PAUSED */
+/** PATCH /api/crons/:id/status — toggle ACTIVE ↔ PAUSED (INACTIVE is a terminal state, use PATCH /:id to change it) */
 crons.patch('/:id/status', async (c) => {
   const id = c.req.param('id')
   try {
     const current = await prisma.cron.findUnique({ where: { id } })
     if (!current) return sendError(c, 'Cron job not found', 404)
+    if (current.status === 'INACTIVE') {
+      return sendError(c, 'Cannot toggle an INACTIVE cron — use the full update endpoint to re-activate it', 409)
+    }
 
     const next = current.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE'
     const updated = await prisma.cron.update({
@@ -151,6 +155,9 @@ crons.post('/:id/trigger', async (c) => {
   try {
     const cron = await prisma.cron.findUnique({ where: { id } })
     if (!cron) return sendError(c, 'Cron job not found', 404)
+    if (cron.status === 'INACTIVE') {
+      return sendError(c, 'Cannot trigger an INACTIVE cron — re-activate it first via the update endpoint', 409)
+    }
 
     const t0 = Date.now()
     let success = false
@@ -161,8 +168,7 @@ crons.post('/:id/trigger', async (c) => {
       success = true
       resultMeta = { method: 'rabbitmq', queue: cron.queueName }
     } else if (cron.httpPath) {
-      const url = `${process.env.GO_DAEMON_URL!}${cron.httpPath}`
-      const res = await fetch(url, { method: 'POST', signal: AbortSignal.timeout(15_000) })
+      const res = await daemonFetch(cron.httpPath, { method: 'POST', signal: AbortSignal.timeout(15_000) })
       success = res.ok
       resultMeta = { method: 'http', httpStatus: res.status, path: cron.httpPath }
     } else {

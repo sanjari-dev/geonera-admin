@@ -11,6 +11,7 @@
 import { Cron } from 'croner'
 import { prisma } from './prisma'
 import { publishToQueue } from './rabbitmq'
+import { daemonFetch } from './daemon'
 
 interface CronRow {
   id: string
@@ -113,8 +114,7 @@ async function _fire(cron: CronRow): Promise<void> {
       console.log(`⏰ [${cron.name}] → ${cron.queueName} ✓`)
     } else if (cron.httpPath) {
       // ── Fallback: HTTP POST to Go Daemon ─────────────────────────────
-      const url = `${process.env.GO_DAEMON_URL!}${cron.httpPath}`
-      const res = await fetch(url, {
+      const res = await daemonFetch(cron.httpPath, {
         method: 'POST',
         signal: AbortSignal.timeout(10_000),
       })

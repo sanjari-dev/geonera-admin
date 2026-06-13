@@ -34,6 +34,11 @@ states.get('/recent', async (c) => {
   const minStreak = parseInt(c.req.query('minStreak') ?? '0')
   const isHoliday = c.req.query('isHoliday')           // 'true' | 'false' | undefined
 
+  const VALID_STATUSES = new Set(['PENDING', 'PROCESSED', 'NOT_FOUND', 'FAILED', 'COMPLETED', 'BROKEN', 'CONFIRMED', 'ABANDONED'])
+  const VALID_JOB_TYPES = new Set(['TICK', 'CANDLE'])
+  if (status  && !VALID_STATUSES.has(status))   return sendError(c, `Invalid status: "${status}"`, 400)
+  if (jobType && !VALID_JOB_TYPES.has(jobType)) return sendError(c, `Invalid jobType: "${jobType}"`, 400)
+
   const where: Record<string, unknown> = { isDeleted: false }
   if (status)       where.status      = status
   if (jobType)      where.jobType     = jobType

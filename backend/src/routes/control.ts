@@ -1,10 +1,9 @@
 import { Hono } from 'hono'
 import { sendSuccess, sendError } from '../lib/response'
+import { daemonFetch } from '../lib/daemon'
+import { prisma } from '../lib/prisma'
 
 const control = new Hono()
-
-const DAEMON_URL = () => process.env.GO_DAEMON_URL!
-import { prisma } from '../lib/prisma'
 
 // Exact Go Fiber routes from internal/api/routes.go
 // All return HTTP 202 with { "status": "triggered_via_http" } — no request body required.
@@ -77,7 +76,7 @@ control.get('/queues', async (c) => {
 // Returns file counts + byte totals per instrument and job type (cached 5 min).
 control.get('/storage', async (c) => {
   try {
-    const res = await fetch(`${DAEMON_URL()}/storage`, {
+    const res = await daemonFetch('/storage', {
       signal: AbortSignal.timeout(15_000), // first call may take a few seconds
     })
     if (!res.ok) return sendError(c, `Daemon returned HTTP ${res.status}`, 502)
@@ -93,7 +92,7 @@ control.get('/storage', async (c) => {
 // exposes live CPU, heap memory, goroutine count, and uptime for the process.
 control.get('/runtime', async (c) => {
   try {
-    const res = await fetch(`${DAEMON_URL()}/runtime`, {
+    const res = await daemonFetch('/runtime', {
       signal: AbortSignal.timeout(5_000),
     })
     if (!res.ok) return sendError(c, `Daemon returned HTTP ${res.status}`, 502)
@@ -134,7 +133,7 @@ async function proxy(actionKey: string, c: any) {
   if (!action) return sendError(c, 'Unknown action', 404)
 
   try {
-    const res = await fetch(`${DAEMON_URL()}${action.path}`, {
+    const res = await daemonFetch(action.path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: AbortSignal.timeout(30_000),
@@ -153,7 +152,7 @@ async function proxy(actionKey: string, c: any) {
     
     let errorMessage = err.message ?? 'Go Daemon unreachable'
     if (errorMessage.includes('Unable to connect')) {
-      errorMessage = `Daemon unreachable at ${DAEMON_URL()}. Is the geonera-ingestion Go service running?`
+      errorMessage = `Daemon unreachable at ${process.env.GO_DAEMON_URL}. Is the geonera-ingestion Go service running?`
     }
 
     return sendError(

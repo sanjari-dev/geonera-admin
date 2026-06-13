@@ -7,6 +7,7 @@
  */
 import { prisma } from './prisma'
 import { getNextRun } from './scheduler'
+import { daemonFetch } from './daemon'
 
 // ── Client registry ───────────────────────────────────────────────────────────
 
@@ -48,7 +49,7 @@ async function pollLocks() {
       ORDER  BY a.query_start ASC
     `
     emitIfChanged('locks', data)
-  } catch {}
+  } catch (e) { console.error('[broadcaster/pollLocks]', e) }
 }
 
 async function pollKpis() {
@@ -75,7 +76,7 @@ async function pollKpis() {
       notFoundStates:   sm['NOT_FOUND']  ?? 0,
       totalStates: statusCounts.reduce((a, s) => a + s._count.id, 0),
     })
-  } catch {}
+  } catch (e) { console.error('[broadcaster/pollKpis]', e) }
 }
 
 async function pollDistribution() {
@@ -88,7 +89,7 @@ async function pollDistribution() {
       orderBy: { _count: { id: 'desc' } },
     })
     emitIfChanged('distribution', rows.map((r) => ({ status: r.status, jobType: r.jobType, count: r._count.id })))
-  } catch {}
+  } catch (e) { console.error('[broadcaster/pollDistribution]', e) }
 }
 
 async function pollActivity() {
@@ -107,7 +108,7 @@ async function pollActivity() {
       LIMIT  5
     `
     emitIfChanged('activity', rows.map((r) => ({ ...r, duration_ms: r.duration_ms != null ? Number(r.duration_ms) : null })))
-  } catch {}
+  } catch (e) { console.error('[broadcaster/pollActivity]', e) }
 }
 
 async function pollProgress() {
@@ -153,7 +154,7 @@ async function pollProgress() {
         latestCandleDate: lcMap.get(inst.id) ?? null,
       }
     }))
-  } catch {}
+  } catch (e) { console.error('[broadcaster/pollProgress]', e) }
 }
 
 async function pollHeatmap() {
@@ -185,7 +186,7 @@ async function pollHeatmap() {
         candleFailed:    sum(cr, 'FAILED') + sum(cr, 'ABANDONED') + sum(cr, 'BROKEN'),
       }
     }))
-  } catch {}
+  } catch (e) { console.error('[broadcaster/pollHeatmap]', e) }
 }
 
 async function pollHealth() {
@@ -195,18 +196,17 @@ async function pollHealth() {
     if (snapshots.get('health') === db) return
     snapshots.set('health', db)
     broadcast({ type: 'health', data: { database: db, timestamp: new Date().toISOString() } })
-  } catch {}
+  } catch (e) { console.error('[broadcaster/pollHealth]', e) }
 }
 
 async function pollRuntime() {
   if (wsClients.size === 0) return
-  const daemonUrl = process.env.GO_DAEMON_URL!
   try {
-    const res = await fetch(`${daemonUrl}/runtime`, { signal: AbortSignal.timeout(3_000) })
+    const res = await daemonFetch('/runtime', { signal: AbortSignal.timeout(3_000) })
     if (!res.ok) return
     const body = await res.json() as { success: boolean; data: unknown }
     if (body.success) broadcast({ type: 'runtime', data: body.data })
-  } catch {}
+  } catch (e) { console.error('[broadcaster/pollRuntime]', e) }
 }
 
 async function pollQueues() {
@@ -228,7 +228,7 @@ async function pollQueues() {
       } catch { return { name, consumers: -1, messages: -1, state: 'unreachable' } }
     }))
     emitIfChanged('queues', { queues: results, healthy: results.filter((q) => q.consumers > 0).length, total: queueNames.length })
-  } catch {}
+  } catch (e) { console.error('[broadcaster/pollQueues]', e) }
 }
 
 async function pollCrons() {
@@ -236,7 +236,7 @@ async function pollCrons() {
   try {
     const data = await prisma.cron.findMany({ orderBy: { name: 'asc' } })
     emitIfChanged('crons', data.map((c) => ({ ...c, nextRunAt: getNextRun(c.cronExpr) })))
-  } catch {}
+  } catch (e) { console.error('[broadcaster/pollCrons]', e) }
 }
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────

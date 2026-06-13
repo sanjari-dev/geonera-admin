@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from 'crypto'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
@@ -18,6 +19,19 @@ import { runMigrations } from './lib/migrate'
 import { startScheduler, stopScheduler } from './lib/scheduler'
 import { closeRabbitMQ } from './lib/rabbitmq'
 import { wsClients, startBroadcasters } from './lib/broadcaster'
+
+// ── Action Secret bootstrap ───────────────────────────────────────────────────
+// If ADMIN_ACTION_SECRET is not provided via .env, generate a one-time SHA1
+// secret from 32 cryptographically-random bytes for this session. The generated
+// value is printed to the console so the operator can copy it into .env to make
+// it persistent across restarts.
+if (!process.env.ADMIN_ACTION_SECRET) {
+  const generated = createHash('sha1').update(randomBytes(32)).digest('hex')
+  process.env.ADMIN_ACTION_SECRET = generated
+  console.log('\x1b[33m⚠\x1b[0m  ADMIN_ACTION_SECRET not set — auto-generated for this session:')
+  console.log(`\x1b[33m   X-Action-Secret: ${generated}\x1b[0m`)
+  console.log('\x1b[2m   Add ADMIN_ACTION_SECRET=' + generated + ' to .env to make it persistent.\x1b[0m')
+}
 
 const { upgradeWebSocket, websocket } = createBunWebSocket<ServerWebSocket>()
 
