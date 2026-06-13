@@ -136,10 +136,8 @@ crons.delete('/:id', async (c) => {
     const existing = await prisma.cron.findUnique({ where: { id } })
     if (!existing) return sendError(c, 'Cron job not found', 404)
 
-    // Stop the scheduler job first
-    await reloadJob(id) // this will stop it since it won't find an active cron
-
     await prisma.cron.delete({ where: { id } })
+    await reloadJob(id)
     return sendSuccess(c, { deleted: id })
   } catch (err: any) {
     console.error('[crons/delete]', err)

@@ -16,7 +16,7 @@ function broadcast(msg: unknown) {
   if (wsClients.size === 0) return
   const str = JSON.stringify(msg)
   for (const ws of wsClients) {
-    try { ws.send(str) } catch {}
+    try { ws.send(str) } catch { wsClients.delete(ws) }
   }
 }
 
