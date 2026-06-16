@@ -145,6 +145,14 @@ export const api = {
     trigger: (key: string) => post<ControlResult>(`/control/${key}`),
   },
 
+  // ─── Settings ─────────────────────────────────────────────────────────────
+  settings: {
+    workerAutoRun: {
+      get: () => get<{ enabled: boolean }>('/settings/worker-auto-run'),
+      set: (enabled: boolean) => patch<{ enabled: boolean }>('/settings/worker-auto-run', { enabled }),
+    },
+  },
+
   // ─── Cron Jobs ─────────────────────────────────────────────────────────────
   crons: {
     list: () => get<import('@/types').Cron[]>('/crons'),

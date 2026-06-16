@@ -52,6 +52,17 @@ const STEPS: string[] = [
     END IF;
   END $$`,
 
+  // ── Settings table (key-value store for runtime configuration) ────────────
+  `CREATE TABLE IF NOT EXISTS schedule.settings (
+    key   VARCHAR NOT NULL,
+    value TEXT    NOT NULL,
+    CONSTRAINT settings_pkey PRIMARY KEY (key)
+  )`,
+
+  `INSERT INTO schedule.settings (key, value)
+   VALUES ('worker_auto_run', 'true')
+   ON CONFLICT (key) DO NOTHING`,
+
   // ── Seed — 6 workers, mod-5 staggered, no two fire at the same minute ────
   //  :00,:05,:10...  Maintenance
   //  :01,:06,:11...  Outbox Sync

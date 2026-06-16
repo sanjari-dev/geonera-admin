@@ -23,6 +23,8 @@ import {
   Pause,
   Play,
   Plus,
+  Power,
+  PowerOff,
   Rabbit,
   Radio,
   RefreshCw,
@@ -1073,11 +1075,36 @@ export default function ControlCenterPage() {
   const [tab, setTab] = useState<Tab>('manual')
   const [log, setLog] = useState<LogEntry[]>([])
   const [logCounter, setLogCounter] = useState(0)
+  const qc = useQueryClient()
+  const { requireConfirmation: confirmAutoRun } = useSecureConfirm()
 
   const { data: allCrons } = useRealtimeQuery('crons', {
     queryKey: ['crons'],
     queryFn: api.crons.list,
   })
+
+  const { data: autoRunData } = useQuery({
+    queryKey: ['worker-auto-run'],
+    queryFn: api.settings.workerAutoRun.get,
+    refetchInterval: 30_000,
+  })
+  const autoRun = autoRunData?.enabled ?? true
+
+  const mutAutoRun = useMutation({
+    mutationFn: (enabled: boolean) => api.settings.workerAutoRun.set(enabled),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['worker-auto-run'] }),
+  })
+
+  const handleToggleAutoRun = () => {
+    confirmAutoRun({
+      title: autoRun ? 'Disable Auto-Run' : 'Enable Auto-Run',
+      message: autoRun
+        ? 'All scheduled workers will stop firing automatically. Manual triggers remain available.'
+        : 'All active scheduled workers will resume automatic execution on their cron schedules.',
+      actionLabel: autoRun ? 'Disable Auto-Run' : 'Enable Auto-Run',
+      onConfirm: () => mutAutoRun.mutate(!autoRun),
+    })
+  }
 
   const pushLog = (entry: Omit<LogEntry, 'id'>) => {
     setLog((prev) => [{ ...entry, id: logCounter }, ...prev.slice(0, 49)])
@@ -1099,32 +1126,65 @@ export default function ControlCenterPage() {
             {' '}· Both return HTTP 202 Accepted (async processing)
           </p>
         </div>
+
         <ActiveLocks />
       </div>
 
-      {/* ── Tab bar ─────────────────────────────────────────────────────────── */}
-      <div className="flex flex-shrink-0 items-center gap-1 self-start rounded-xl border border-slate-200 dark:border-sky-900/30 shadow-sm bg-[#040F1E] p-1">
-        {([
-          { id: 'manual', label: 'Manual Triggers', icon: Zap, badge: 'REST', badgeColor: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
-          { id: 'scheduled', label: 'Scheduled Jobs', icon: Clock, badge: 'RabbitMQ', badgeColor: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
-        ] as const).map(({ id, label, icon: Icon, badge, badgeColor }) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={clsx(
-              'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200',
-              tab === id
-                ? 'bg-white dark:bg-[#071628] text-slate-800 dark:text-sky-100 shadow-sm border border-slate-300 dark:border-slate-700/50'
-                : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300'
-            )}
-          >
-            <Icon size={14} strokeWidth={tab === id ? 2.5 : 2} />
-            {label}
-            <span className={clsx('rounded border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider', badgeColor)}>
-              {badge}
-            </span>
-          </button>
-        ))}
+      {/* ── Tab bar + Auto-Run Toggle ────────────────────────────────────────── */}
+      <div className="flex flex-shrink-0 items-center justify-between gap-3">
+        {/* Tab switcher */}
+        <div className="flex items-center gap-1 rounded-xl border border-slate-200 dark:border-sky-900/30 shadow-sm bg-[#040F1E] p-1">
+          {([
+            { id: 'manual', label: 'Manual Triggers', icon: Zap, badge: 'REST', badgeColor: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
+            { id: 'scheduled', label: 'Scheduled Jobs', icon: Clock, badge: 'RabbitMQ', badgeColor: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
+          ] as const).map(({ id, label, icon: Icon, badge, badgeColor }) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={clsx(
+                'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200',
+                tab === id
+                  ? 'bg-white dark:bg-[#071628] text-slate-800 dark:text-sky-100 shadow-sm border border-slate-300 dark:border-slate-700/50'
+                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:text-slate-300'
+              )}
+            >
+              <Icon size={14} strokeWidth={tab === id ? 2.5 : 2} />
+              {label}
+              <span className={clsx('rounded border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider', badgeColor)}>
+                {badge}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Worker Auto-Run Toggle */}
+        <button
+          onClick={handleToggleAutoRun}
+          disabled={mutAutoRun.isPending}
+          title={autoRun ? 'Click to disable automatic scheduling' : 'Click to enable automatic scheduling'}
+          className={clsx(
+            'flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-all duration-200 disabled:opacity-50',
+            autoRun
+              ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+              : 'border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20'
+          )}
+        >
+          {mutAutoRun.isPending
+            ? <RefreshCw size={14} className="animate-spin" />
+            : autoRun
+              ? <Power size={14} />
+              : <PowerOff size={14} />
+          }
+          <span className="whitespace-nowrap">
+            {autoRun ? 'Auto-Run ON' : 'Auto-Run OFF'}
+          </span>
+          <span className={clsx(
+            'h-2 w-2 rounded-full flex-shrink-0',
+            autoRun
+              ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)] animate-pulse'
+              : 'bg-red-400'
+          )} />
+        </button>
       </div>
 
       {/* ── Main area ───────────────────────────────────────────────────────── */}

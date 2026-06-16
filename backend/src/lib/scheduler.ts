@@ -25,17 +25,49 @@ interface CronRow {
 
 const jobs = new Map<string, Cron>()
 
+// In-memory cache for the global auto-run flag (persisted to schedule.settings)
+let _autoRun = true
+
 // ─── Public API ──────────────────────────────────────────────────────────────
+
+/** Return current global auto-run state. */
+export function getAutoRun(): boolean {
+  return _autoRun
+}
+
+/** Persist the auto-run flag to DB and update the in-memory cache. */
+export async function setAutoRun(enabled: boolean): Promise<void> {
+  _autoRun = enabled
+  await prisma.$executeRaw`
+    UPDATE schedule.settings SET value = ${enabled ? 'true' : 'false'}
+    WHERE key = 'worker_auto_run'
+  `
+  console.log(`⏰ Worker auto-run ${enabled ? 'ENABLED' : 'DISABLED'}`)
+}
+
+/** Load the auto-run setting from DB (called once at startup). */
+async function _loadAutoRun(): Promise<void> {
+  try {
+    const rows = await prisma.$queryRaw<{ value: string }[]>`
+      SELECT value FROM schedule.settings WHERE key = 'worker_auto_run'
+    `
+    if (rows.length > 0) _autoRun = rows[0].value === 'true'
+  } catch (err: any) {
+    console.warn('⏰ Could not load worker_auto_run setting, defaulting to enabled:', err.message)
+  }
+}
 
 /** Load all ACTIVE crons and start their schedules. Called once at startup. */
 export async function startScheduler(): Promise<void> {
+  await _loadAutoRun()
+
   const crons = await prisma.cron.findMany({ where: { status: 'ACTIVE' } })
 
   for (const cron of crons) {
     _scheduleOne(cron)
   }
 
-  console.log(`⏰ Scheduler started — ${crons.length} active jobs`)
+  console.log(`⏰ Scheduler started — ${crons.length} active jobs (auto-run: ${_autoRun ? 'ON' : 'OFF'})`)
 }
 
 /**
@@ -101,6 +133,11 @@ function _stopOne(id: string): void {
 }
 
 async function _fire(cron: CronRow): Promise<void> {
+  if (!_autoRun) {
+    console.log(`⏰ [${cron.name}] SKIPPED — worker auto-run is disabled`)
+    return
+  }
+
   const t0 = Date.now()
   let success = false
   let resultMeta: Record<string, unknown> = {}

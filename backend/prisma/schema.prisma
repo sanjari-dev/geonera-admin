@@ -117,6 +117,16 @@ model Cron {
   @@schema("schedule")
 }
 
+// ─── schedule.settings ───────────────────────────────────────────────────────
+// Key-value store for runtime configuration (e.g. worker_auto_run).
+model Setting {
+  key   String @id
+  value String
+
+  @@map("settings")
+  @@schema("schedule")
+}
+
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
 enum JobType {

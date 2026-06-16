@@ -12,6 +12,7 @@ import states from './routes/states'
 import progress from './routes/progress'
 import control from './routes/control'
 import crons from './routes/crons'
+import settings from './routes/settings'
 import { globalErrorHandler } from './middleware/errorHandler'
 import { actionSecretMiddleware } from './middleware/auth'
 import { sendSuccess } from './lib/response'
@@ -64,6 +65,7 @@ app.route('/api/states', states)
 app.route('/api/progress', progress)
 app.route('/api/control', control)
 app.route('/api/crons', crons)
+app.route('/api/settings', settings)
 
 app.get('/health', (c) => sendSuccess(c, { status: 'ok', timestamp: new Date().toISOString() }))
 
