@@ -278,6 +278,13 @@ export function scheduleBroadcast() {
   }, 5_000)
 }
 
+// triggerBroadcast runs broadcastAll immediately (no debounce).
+// Called when a new WS client connects so it receives fresh data right away
+// instead of waiting up to 60 s for the next scheduled broadcast cycle.
+export function triggerBroadcast() {
+  void broadcastAll()
+}
+
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
 export function startBroadcasters() {

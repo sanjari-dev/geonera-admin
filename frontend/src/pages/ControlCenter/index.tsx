@@ -1069,8 +1069,6 @@ function LastRunPanel({ crons }: { crons: Cron[] }) {
 
 // ─── Page root ────────────────────────────────────────────────────────────────
 
-import { ActiveLocks } from '@/components/ui/ActiveLocks'
-
 export default function ControlCenterPage() {
   const [tab, setTab] = useState<Tab>('manual')
   const [log, setLog] = useState<LogEntry[]>([])
@@ -1127,7 +1125,6 @@ export default function ControlCenterPage() {
           </p>
         </div>
 
-        <ActiveLocks />
       </div>
 
       {/* ── Tab bar + Auto-Run Toggle ────────────────────────────────────────── */}

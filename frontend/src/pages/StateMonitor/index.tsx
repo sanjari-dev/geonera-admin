@@ -290,9 +290,18 @@ export default function StateMonitorPage() {
     queryFn: api.instruments.list,
   })
 
-  // Invalidate the recent-states table whenever distribution changes (states changed in DB).
+  // Invalidate the recent-states table whenever the distribution WS event arrives
+  // (immediate path: ingestion job completes → RabbitMQ → broadcastAll → WS push).
   useEffect(() => {
     return wsEvents.on('distribution', () => {
+      queryClient.invalidateQueries({ queryKey: ['states', 'recent'] })
+    })
+  }, [queryClient])
+
+  // Also invalidate on WS reconnect so stale rows accumulated during disconnect
+  // are replaced immediately (mirrors the useRealtimeQuery reconnect behaviour).
+  useEffect(() => {
+    return wsEvents.on('ws:connected', () => {
       queryClient.invalidateQueries({ queryKey: ['states', 'recent'] })
     })
   }, [queryClient])
@@ -310,6 +319,8 @@ export default function StateMonitorPage() {
         minStreak: filters.minStreak > 0 ? filters.minStreak : undefined,
       }),
     placeholderData: keepPreviousData,
+    // Fallback: when WS events don't arrive (polling path), keep the table fresh.
+    refetchInterval: 30_000,
   })
 
   const handleFilterChange = (delta: Partial<Filters>) => {

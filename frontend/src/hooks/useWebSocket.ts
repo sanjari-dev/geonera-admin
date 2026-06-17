@@ -16,7 +16,12 @@ export function useWebSocket() {
     const socket = new WebSocket(`${proto}//${location.host}/ws`)
     ws.current = socket
 
-    socket.onopen = () => setStatus('connected')
+    socket.onopen = () => {
+      setStatus('connected')
+      // Signal all useRealtimeQuery hooks to re-validate their data.
+      // Covers the reconnect case: data may have changed while WS was down.
+      wsEvents.emit('ws:connected', null)
+    }
     socket.onclose = () => {
       setStatus('disconnected')
       retryTimer.current = setTimeout(connect, 5_000)

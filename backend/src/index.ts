@@ -19,7 +19,7 @@ import { sendSuccess } from './lib/response'
 import { runMigrations } from './lib/migrate'
 import { startScheduler, stopScheduler } from './lib/scheduler'
 import { closeRabbitMQ, subscribeToEvents } from './lib/rabbitmq'
-import { wsClients, startBroadcasters, scheduleBroadcast } from './lib/broadcaster'
+import { wsClients, startBroadcasters, scheduleBroadcast, triggerBroadcast } from './lib/broadcaster'
 
 // ── Action Secret bootstrap ───────────────────────────────────────────────────
 // If ADMIN_ACTION_SECRET is not provided via .env, generate a one-time SHA1
@@ -77,6 +77,9 @@ app.get(
     onOpen(_evt, ws) {
       wsClients.add(ws)
       ws.send(JSON.stringify({ type: 'connected', timestamp: new Date().toISOString() }))
+      // Push fresh data to the newly connected client so it doesn't wait up
+      // to 60 s for the next scheduled broadcast cycle.
+      triggerBroadcast()
     },
     onClose(_evt, ws) {
       wsClients.delete(ws)
