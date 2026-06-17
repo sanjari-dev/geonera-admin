@@ -17,7 +17,6 @@ import { globalErrorHandler } from './middleware/errorHandler'
 import { actionSecretMiddleware } from './middleware/auth'
 import { sendSuccess } from './lib/response'
 import { runMigrations } from './lib/migrate'
-import { startScheduler, stopScheduler } from './lib/scheduler'
 import { closeRabbitMQ, subscribeToEvents } from './lib/rabbitmq'
 import { wsClients, startBroadcasters, scheduleBroadcast, triggerBroadcast } from './lib/broadcaster'
 
@@ -98,13 +97,10 @@ async function bootstrap() {
     // 1. Ensure schedule.crons table exists (idempotent, safe on every restart)
     await runMigrations()
 
-    // 2. Start the in-process cron scheduler
-    await startScheduler()
-
-    // 3. Start WebSocket broadcasters (push live data to all connected clients)
+    // 2. Start WebSocket broadcasters (push live data to all connected clients)
     startBroadcasters()
 
-    // 4. Subscribe to ingestion state-change events — triggers debounced broadcast
+    // 3. Subscribe to ingestion state-change events — triggers debounced broadcast
     //    instead of hammering the DB on a fixed interval. Self-healing on drop.
     await subscribeToEvents(scheduleBroadcast)
   } catch (err: any) {
@@ -115,13 +111,11 @@ async function bootstrap() {
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
-  stopScheduler()
   await closeRabbitMQ()
   process.exit(0)
 })
 
 process.on('SIGINT', async () => {
-  stopScheduler()
   await closeRabbitMQ()
   process.exit(0)
 })

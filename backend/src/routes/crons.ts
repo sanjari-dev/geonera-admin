@@ -3,7 +3,7 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma'
 import { sendSuccess, sendError } from '../lib/response'
-import { reloadJob, getNextRun } from '../lib/scheduler'
+import { notifyCronReload, getNextRun } from '../lib/scheduler'
 import { publishToQueue } from '../lib/rabbitmq'
 import { daemonFetch } from '../lib/daemon'
 
@@ -43,8 +43,8 @@ crons.get('/:id', async (c) => {
 const createSchema = z.object({
   name: z.string().min(2).max(60).transform((v) => v.toLowerCase().trim().replace(/\s+/g, '-')),
   description: z.string().max(300).optional(),
-  cronExpr: z.string().min(9),   // e.g. "*/5 * * * *"
-  workerKey: z.string().min(1),  // e.g. "ticks/regular"
+  cronExpr: z.string().min(9),
+  workerKey: z.string().min(1),
   triggerMethod: z.enum(['RABBITMQ', 'HTTP']).default('RABBITMQ'),
   queueName: z.string().optional(),
   httpPath: z.string().optional(),
@@ -69,8 +69,7 @@ crons.post('/', zValidator('json', createSchema), async (c) => {
         updatedAt: new Date(),
       },
     })
-    // Start the scheduler job immediately if ACTIVE
-    await reloadJob(cron.id)
+    await notifyCronReload(cron.id)
     return sendSuccess(c, withNextRun(cron), 201)
   } catch (err: any) {
     if (err?.code === 'P2002') return sendError(c, `Cron name "${body.name}" already exists`, 409)
@@ -101,8 +100,7 @@ crons.patch('/:id', zValidator('json', updateSchema), async (c) => {
       where: { id },
       data: { ...body, updatedAt: new Date() },
     })
-    // Reload the scheduler with the new settings
-    await reloadJob(id)
+    await notifyCronReload(id)
     return sendSuccess(c, withNextRun(updated))
   } catch (err: any) {
     console.error('[crons/update]', err)
@@ -110,7 +108,7 @@ crons.patch('/:id', zValidator('json', updateSchema), async (c) => {
   }
 })
 
-/** PATCH /api/crons/:id/status — toggle ACTIVE ↔ PAUSED (INACTIVE is a terminal state, use PATCH /:id to change it) */
+/** PATCH /api/crons/:id/status — toggle ACTIVE ↔ PAUSED */
 crons.patch('/:id/status', async (c) => {
   const id = c.req.param('id')
   try {
@@ -125,7 +123,7 @@ crons.patch('/:id/status', async (c) => {
       where: { id },
       data: { status: next, updatedAt: new Date() },
     })
-    await reloadJob(id)
+    await notifyCronReload(id)
     return sendSuccess(c, withNextRun(updated))
   } catch (err: any) {
     console.error('[crons/status]', err)
@@ -141,7 +139,7 @@ crons.delete('/:id', async (c) => {
     if (!existing) return sendError(c, 'Cron job not found', 404)
 
     await prisma.cron.delete({ where: { id } })
-    await reloadJob(id)
+    await notifyCronReload(id)
     return sendSuccess(c, { deleted: id })
   } catch (err: any) {
     console.error('[crons/delete]', err)
@@ -177,7 +175,6 @@ crons.post('/:id/trigger', async (c) => {
 
     const result = { success, durationMs: Date.now() - t0, triggeredAt: new Date().toISOString(), ...resultMeta }
 
-    // Persist the manual trigger result
     await prisma.cron.update({
       where: { id },
       data: { lastTriggeredAt: new Date(), lastResult: result, updatedAt: new Date() },

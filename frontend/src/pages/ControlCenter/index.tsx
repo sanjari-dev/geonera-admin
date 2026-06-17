@@ -165,13 +165,13 @@ const ACTION_STYLES: Record<string, ActionStyle> = {
 }
 
 // Metadata per worker — sourced from architecture doc (Arsitektur Ingestion.md)
-const ACTION_META: Record<string, { frequency: string; mode: string; lock: string }> = {
-  'ticks/regular':    { frequency: 'Hourly :02',   mode: 'T-0 · T-1 · T-2',  lock: 'Lock #1001' },
-  'ticks/backfill':   { frequency: 'Every 10 min', mode: 'FAILED → Retry',    lock: 'Lock #1001' },
-  'candles/regular':  { frequency: 'Daily 05:08',  mode: '19 Timeframes',     lock: 'Lock #1002' },
-  'candles/backfill': { frequency: 'Every 20 min', mode: 'OHLCV Sweeper',     lock: 'Lock #1002' },
-  'maintenance':      { frequency: 'Every 5 min',  mode: 'Seeder + Pruner',   lock: 'Lock #1003' },
-  'sync':             { frequency: 'Every 5 min',  mode: 'Outbox Pattern',    lock: 'Lock #1004' },
+const ACTION_META: Record<string, { frequency: string; mode: string }> = {
+  'ticks/regular':    { frequency: 'Hourly :02',   mode: 'T-0 · T-1 · T-2' },
+  'ticks/backfill':   { frequency: 'Every 10 min', mode: 'FAILED → Retry'   },
+  'candles/regular':  { frequency: 'Daily 05:08',  mode: '19 Timeframes'    },
+  'candles/backfill': { frequency: 'Every 20 min', mode: 'OHLCV Sweeper'    },
+  'maintenance':      { frequency: 'Every 5 min',  mode: 'Seeder + Pruner'  },
+  'sync':             { frequency: 'Every 5 min',  mode: 'Outbox Pattern'   },
 }
 
 // Natural-looking signal wave heights (14 bars)
@@ -282,7 +282,7 @@ function ActionCard({
         {/* Row 2: Metadata chips */}
         {meta && (
           <div className="flex flex-wrap gap-1">
-            {[meta.frequency, meta.mode, meta.lock].map((label) => (
+            {[meta.frequency, meta.mode].map((label) => (
               <span
                 key={label}
                 className={clsx(
@@ -395,7 +395,7 @@ function NextRunHeroCard({
           <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 truncate">{action.description}</p>
           {meta && (
             <div className="flex flex-wrap gap-1.5 mt-2">
-              {[meta.frequency, meta.mode, meta.lock].map((label) => (
+              {[meta.frequency, meta.mode].map((label) => (
                 <span key={label} className={clsx('rounded border px-2 py-0.5 text-[10px] font-semibold tracking-wide whitespace-nowrap', s.chip)}>
                   {label}
                 </span>

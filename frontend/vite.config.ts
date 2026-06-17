@@ -22,9 +22,9 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': { target: 'http://localhost:3001', changeOrigin: true },
-      '/ws': { 
-        target: 'ws://localhost:3001', 
+      '/api': { target: 'http://192.168.1.9:3001', changeOrigin: true },
+      '/ws': {
+        target: 'ws://192.168.1.9:3001',
         ws: true,
         configure: (proxy, _options) => {
           proxy.on('error', (err: any, _req, _res) => {
