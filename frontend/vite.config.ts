@@ -13,6 +13,11 @@ customLogger.error = (msg, options) => {
   loggerError(msg, options)
 }
 
+// Backend host for the dev proxy — override via BACKEND_URL env var for LAN/remote dev.
+// Example: BACKEND_URL=http://192.168.1.9:3001 vite --host
+const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:3001'
+const backendWsUrl = backendUrl.replace(/^http/, 'ws')
+
 export default defineConfig({
   customLogger,
   plugins: [react()],
@@ -22,9 +27,9 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': { target: 'http://192.168.1.9:3001', changeOrigin: true },
+      '/api': { target: backendUrl, changeOrigin: true },
       '/ws': {
-        target: 'ws://192.168.1.9:3001',
+        target: backendWsUrl,
         ws: true,
         configure: (proxy, _options) => {
           proxy.on('error', (err: any, _req, _res) => {
