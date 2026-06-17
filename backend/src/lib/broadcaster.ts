@@ -239,17 +239,59 @@ async function pollCrons() {
   } catch (e) { console.error('[broadcaster/pollCrons]', e) }
 }
 
+// ── Event-driven broadcast ────────────────────────────────────────────────────
+
+// _broadcastInFlight prevents concurrent broadcastAll invocations.
+// Without this guard, rapid-fire fallback ticks during backfill could pile up
+// the same GROUP BY queries that caused 278% CPU in the first place.
+let _broadcastInFlight = false
+
+// broadcastAll runs all heavy (states-table) pollers as a unit.
+// It is called by scheduleBroadcast (event-triggered) and the 60-second
+// safety-net interval, never by setInterval directly.
+async function broadcastAll() {
+  if (_broadcastInFlight) return
+  _broadcastInFlight = true
+  try {
+    await Promise.allSettled([
+      pollKpis(),
+      pollDistribution(),
+      pollActivity(),
+      pollProgress(),
+      pollHeatmap(),
+    ])
+  } finally {
+    _broadcastInFlight = false
+  }
+}
+
+let _broadcastDebounce: ReturnType<typeof setTimeout> | null = null
+
+// scheduleBroadcast collapses burst signals (e.g. backfill batch completions)
+// into a single DB query cycle after a 5-second quiet period.
+// Called by the RabbitMQ event subscriber in index.ts.
+export function scheduleBroadcast() {
+  if (_broadcastDebounce) clearTimeout(_broadcastDebounce)
+  _broadcastDebounce = setTimeout(() => {
+    _broadcastDebounce = null
+    void broadcastAll()
+  }, 5_000)
+}
+
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
 export function startBroadcasters() {
-  setInterval(pollLocks,       1_000)
-  setInterval(pollKpis,        3_000)
-  setInterval(pollDistribution,3_000)
-  setInterval(pollActivity,    3_000)
-  setInterval(pollRuntime,     3_000)
-  setInterval(pollProgress,    5_000)
-  setInterval(pollHeatmap,     5_000)
-  setInterval(pollQueues,      5_000)
-  setInterval(pollHealth,      5_000)
-  setInterval(pollCrons,      10_000)
+  // Lightweight pollers — keep on fixed intervals (do not query the states table).
+  setInterval(pollLocks,    1_000)
+  setInterval(pollRuntime,  3_000)
+  setInterval(pollHealth,   5_000)
+  setInterval(pollQueues,   5_000)
+  setInterval(pollCrons,   10_000)
+
+  // Safety-net: refresh heavy pollers every 60 s in case an event signal is lost
+  // (e.g. admin-backend restarts mid-backfill or RabbitMQ drops the connection).
+  setInterval(broadcastAll, 60_000)
+
+  // Initial push so the dashboard is populated as soon as the first client connects.
+  void broadcastAll()
 }

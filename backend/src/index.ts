@@ -18,8 +18,8 @@ import { actionSecretMiddleware } from './middleware/auth'
 import { sendSuccess } from './lib/response'
 import { runMigrations } from './lib/migrate'
 import { startScheduler, stopScheduler } from './lib/scheduler'
-import { closeRabbitMQ } from './lib/rabbitmq'
-import { wsClients, startBroadcasters } from './lib/broadcaster'
+import { closeRabbitMQ, subscribeToEvents } from './lib/rabbitmq'
+import { wsClients, startBroadcasters, scheduleBroadcast } from './lib/broadcaster'
 
 // ── Action Secret bootstrap ───────────────────────────────────────────────────
 // If ADMIN_ACTION_SECRET is not provided via .env, generate a one-time SHA1
@@ -100,6 +100,10 @@ async function bootstrap() {
 
     // 3. Start WebSocket broadcasters (push live data to all connected clients)
     startBroadcasters()
+
+    // 4. Subscribe to ingestion state-change events — triggers debounced broadcast
+    //    instead of hammering the DB on a fixed interval. Self-healing on drop.
+    await subscribeToEvents(scheduleBroadcast)
   } catch (err: any) {
     console.error('⚠️  Bootstrap error (non-fatal):', err.message)
     // Don't crash the server — DB/MQ might become available later
