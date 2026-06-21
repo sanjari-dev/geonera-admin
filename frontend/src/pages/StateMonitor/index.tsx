@@ -273,10 +273,11 @@ function jaegerSearchUrl(instrumentName: string, _timestamp: string): string {
   return `${JAEGER_URL}/search?${q}`
 }
 
-function CopyButton({ text }: { text: string }) {
+function CopyButton({ text, title }: { text: string; title: string }) {
   const [copied, setCopied] = useState(false)
 
-  const handleCopy = async () => {
+  const handleCopy = async (e: { stopPropagation: () => void }) => {
+    e.stopPropagation()
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
@@ -295,7 +296,7 @@ function CopyButton({ text }: { text: string }) {
           ? "bg-emerald-500/10 text-emerald-400"
           : "text-slate-600 hover:bg-sky-500/10 hover:text-sky-400"
       )}
-      title={copied ? "Copied!" : "Copy Trace ID"}
+      title={copied ? "Copied!" : title}
     >
       {copied ? <Check size={12} /> : <Copy size={12} />}
     </button>
@@ -601,15 +602,16 @@ export default function StateMonitorPage() {
                         {new Date(s.updatedAt).toISOString().slice(0, 19).replace('T', ' ')}
                       </td>
 
-                      {/* Copy Trace ID */}
+                      {/* Copy Buttons */}
                       <td className="px-3 py-2 text-center">
-                        {s.traceId ? (
-                          <div className="flex justify-center">
-                            <CopyButton text={s.traceId} />
-                          </div>
-                        ) : (
-                          <span className="text-[10px] text-slate-600">—</span>
-                        )}
+                        <div className="flex items-center justify-center gap-1.5">
+                          <CopyButton text={s.id} title="Copy State ID" />
+                          {s.traceId ? (
+                            <CopyButton text={s.traceId} title="Copy Trace ID" />
+                          ) : (
+                            <span className="text-[10px] text-slate-600 w-5 text-center">—</span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
