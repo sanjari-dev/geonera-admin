@@ -45,6 +45,7 @@ export interface State {
   notFoundStreak: number
   isDeleted: boolean
   updatedAt: string
+  traceId?: string | null
   instrument?: Pick<Instrument, 'name'>
 }
 

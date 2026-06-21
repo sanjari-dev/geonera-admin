@@ -70,6 +70,7 @@ model State {
   notFoundStreak    Int        @default(0) @map("not_found_streak")
   isDeleted         Boolean    @default(false) @map("is_deleted")
   updatedAt         DateTime   @map("updated_at") @db.Timestamptz
+  traceId           String?    @map("trace_id")
   instrument        Instrument @relation(fields: [instrumentId], references: [id])
 
   @@unique([instrumentId, timestamp, jobType])

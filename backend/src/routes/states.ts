@@ -65,6 +65,7 @@ states.get('/recent', async (c) => {
           notFoundStreak: true,
           isDeleted: true,
           updatedAt: true,
+          traceId: true,
           instrument: { select: { name: true } },
         },
         orderBy: { updatedAt: 'desc' },

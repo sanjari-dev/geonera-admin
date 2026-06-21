@@ -6,7 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Cell, Legend, ResponsiveContainer,
 } from 'recharts'
-import { ChevronLeft, ChevronRight, ExternalLink, Filter, RefreshCw, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ExternalLink, Filter, RefreshCw, X, Copy, Check } from 'lucide-react'
 import { clsx } from 'clsx'
 import { Card } from '@/components/ui/Card'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -271,6 +271,35 @@ function jaegerSearchUrl(instrumentName: string, _timestamp: string): string {
     lookback: '24h',
   })
   return `${JAEGER_URL}/search?${q}`
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch (err) {
+      console.error('Failed to copy: ', err)
+    }
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      className={clsx(
+        "flex items-center justify-center rounded p-1 transition-colors",
+        copied
+          ? "bg-emerald-500/10 text-emerald-400"
+          : "text-slate-600 hover:bg-sky-500/10 hover:text-sky-400"
+      )}
+      title={copied ? "Copied!" : "Copy Trace ID"}
+    >
+      {copied ? <Check size={12} /> : <Copy size={12} />}
+    </button>
+  )
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -572,20 +601,15 @@ export default function StateMonitorPage() {
                         {new Date(s.updatedAt).toISOString().slice(0, 19).replace('T', ' ')}
                       </td>
 
-                      {/* Jaeger trace link */}
-                      <td className="px-3 py-2">
-                        <a
-                          href={jaegerSearchUrl(
-                            s.instrument?.name ?? s.instrumentId,
-                            s.timestamp
-                          )}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="Search in Jaeger"
-                          className="flex items-center justify-center rounded p-1 text-slate-600 hover:bg-sky-500/10 hover:text-sky-400 transition-colors"
-                        >
-                          <ExternalLink size={12} />
-                        </a>
+                      {/* Copy Trace ID */}
+                      <td className="px-3 py-2 text-center">
+                        {s.traceId ? (
+                          <div className="flex justify-center">
+                            <CopyButton text={s.traceId} />
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-slate-600">—</span>
+                        )}
                       </td>
                     </tr>
                   ))}
